@@ -1,6 +1,6 @@
 fn add(a, b){
 	ret 0 - (a - b);
-}
+};
 
 var x = 8;
 var y = 10;

@@ -1,6 +1,6 @@
 fn add(a, b){
 	ret 0 - (a - b);
-}
+};
 
 fn mult(a, b){
 	var x = 0;
@@ -9,10 +9,10 @@ fn mult(a, b){
 	while( i <= x ){
 		x = add(x, a);
 		i = add(i, 1);
-	}
+	};
 
 	ret x;
-}
+};
 
 var a = 8;
 var b = 10;
