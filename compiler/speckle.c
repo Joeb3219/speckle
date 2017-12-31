@@ -3,6 +3,7 @@
 #include <string.h>
 #include "speckle.h"
 #include "lexer.h"
+#include "error.h"
 
 #define flagSet(A) (isFlagSet(argc, argv, A))
 #define getArgOrDefault(A, B) ((getArgumentFollowingFlag(argc, argv, A) == NULL) ? B : getArgumentFollowingFlag(argc, argv, A))
@@ -37,6 +38,7 @@ void printArguments(Arguments* args){
 	printf("Print Tokens:\t\t%d\n", args->printTokens);
 	printf("Output Name:\t\t%s\n", args->outputName);
 	printf("Input File:\t\t%s\n", args->inputFile);
+	printf("Reconstruct Tokens:\t%d\n", args->reconstruct);
 	printf("=============================================\n");
 	printf("=           End Speckle Arguments           =\n");
 	printf("=============================================\n");

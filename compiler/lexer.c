@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "lexer.h"
+#include "error.h"
 #include "speckle.h"
 
 #define MAX_TOKEN_SIZE 32
