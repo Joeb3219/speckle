@@ -3,6 +3,7 @@
 #include <string.h>
 #include "speckle.h"
 #include "lexer.h"
+#include "parser.h"
 #include "error.h"
 
 #define flagSet(A) (isFlagSet(argc, argv, A))
@@ -77,6 +78,10 @@ int main(int argc, char** argv){
 	FILE* file = fopen(args->inputFile, "r");
 	Token* head = tokenize(args, file);
 	fclose(file);
+
+	Lexeme* program = parse(args, head);
+
+	destroyTree(program);
 
 	free(args);
 
