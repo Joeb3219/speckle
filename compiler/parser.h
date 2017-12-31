@@ -6,7 +6,7 @@
 	enum LexemeType{
 		LEX_PROGRAM, LEX_STMTLIST, LEX_STMT,
 		LEX_DECLARATION, LEX_ASSIGN, 
-		LEX_FUNC, LEX_FUNCCALL, LEX_EXPRESSION,
+		LEX_FUNC, LEX_FUNCCALL, LEX_EXPRESSION, LEX_RETURN,
 		LEX_LOGIC, LEX_LEQ, LEX_EQUALS, LEX_OR, LEX_AND, LEX_NOT,
 		LEX_ARGLIST, LEX_PARAMLIST,
 		LEX_IF, LEX_WHILE, LEX_SUB
@@ -24,25 +24,26 @@
 
 	typedef struct Lexeme Lexeme;
 
-	int parseProgram(Lexeme* head, Token** current);
-	int parseStmtList(Lexeme* head, Token** current);
-	int parseStmt(Lexeme* head, Token** current);
-	int parseDeclaration(Lexeme* head, Token** current);
-	int parseAssign(Lexeme* head, Token** current);
-	int parseFunc(Lexeme* head, Token** current);
-	int parseFuncCall(Lexeme* head, Token** current);
-	int parseExpression(Lexeme* head, Token** current);
-	int parseLogic(Lexeme* head, Token** current);
-	int parseLeq(Lexeme* head, Token** current);
-	int parseEquals(Lexeme* head, Token** current);
-	int parseOr(Lexeme* head, Token** current);
-	int parseAnd(Lexeme* head, Token** current);
-	int parseNot(Lexeme* head, Token** current);
-	int parseArgList(Lexeme* head, Token** current);
-	int parseParamList(Lexeme* head, Token** current);
-	int parseIf(Lexeme* head, Token** current);
-	int parseWhile(Lexeme* head, Token** current);
-	int parseSub(Lexeme* head, Token** current);
+	void parseProgram(Lexeme* head);
+	void parseStmtList(Lexeme* head);
+	void parseStmt(Lexeme* head);
+	void parseDeclaration(Lexeme* head);
+	void parseAssign(Lexeme* head);
+	void parseFunc(Lexeme* head);
+	void parseReturn(Lexeme* head);
+	void parseFuncCall(Lexeme* head);
+	void parseExpression(Lexeme* head);
+	void parseLogic(Lexeme* head);
+	void parseLeq(Lexeme* head);
+	void parseEquals(Lexeme* head);
+	void parseOr(Lexeme* head);
+	void parseAnd(Lexeme* head);
+	void parseNot(Lexeme* head);
+	void parseArgList(Lexeme* head);
+	void parseParamList(Lexeme* head);
+	void parseIf(Lexeme* head);
+	void parseWhile(Lexeme* head);
+	void parseSub(Lexeme* head);
 	
 	void addChild(Lexeme* parent, Lexeme* child);
 	void destroyTree(Lexeme* head);
