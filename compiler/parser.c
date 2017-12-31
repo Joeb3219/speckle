@@ -4,6 +4,7 @@
 #include "parser.h"
 #include "lexer.h"
 #include "speckle.h"
+#include "error.h"
 
 #define currentToken()	((*current))
 #define consume()		(current = &(*current)->next)
@@ -21,8 +22,88 @@ void addChild(Lexeme* parent, Lexeme* child){
 	}
 }
 
-void parseProgram(Lexeme* head, Token** current){
+int parseStmtList(Lexeme* head, Token** current){
+
+}
+
+int parseStmt(Lexeme* head, Token** current){
+
+}
+
+int parseDeclaration(Lexeme* head, Token** current){
+
+}
+
+int parseAssign(Lexeme* head, Token** current){
+
+}
+
+int parseFunc(Lexeme* head, Token** current){
+
+}
+
+int parseFuncCall(Lexeme* head, Token** current){
+
+}
+
+int parseExpression(Lexeme* head, Token** current){
+
+}
+
+int parseLogic(Lexeme* head, Token** current){
+
+}
+
+int parseLeq(Lexeme* head, Token** current){
+
+}
+
+int parseEquals(Lexeme* head, Token** current){
+
+}
+
+int parseOr(Lexeme* head, Token** current){
+
+}
+
+int parseAnd(Lexeme* head, Token** current){
+
+}
+
+int parseNot(Lexeme* head, Token** current){
+
+}
+
+int parseArgList(Lexeme* head, Token** current){
+
+}
+
+int parseParamList(Lexeme* head, Token** current){
+
+}
+
+int parseIf(Lexeme* head, Token** current){
+
+}
+
+int parseWhile(Lexeme* head, Token** current){
+
+}
+
+int parseSub(Lexeme* head, Token** current){
+
+}
+
+
+int parseProgram(Lexeme* head, Token** current){
+	if(isTokenType(END)) ERR_UNEXPECTED_EOF(currentToken());
+	if(isTokenType(UNKNOWN)) ERR_UNEXPECTED_TOKEN(currentToken());
+	int status = parseStmtList(head, current);
+
+	if(isTokenType(END)) return 1;
 	
+	ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), END);
+	return 0;
 }
 
 Lexeme* createLexeme(){
@@ -49,6 +130,6 @@ void destroyTree(Lexeme* head){
 
 Lexeme* parse(Arguments* args, Token* headToken){
 	Lexeme* head = createLexeme();
-	parseProgram(head, &headToken);
+	int status = parseProgram(head, &headToken);
 	return head;
 }
