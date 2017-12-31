@@ -14,7 +14,13 @@ number: [+-]^?[0-9][0-9]^?
 
 <func>			:= fn identifier ( <arglist> ) { <stmtlist> }
 <funcCall>		:= identifier ( <paramlist> )
-<expression>		:= ( <expression> ) | <sub> | <assign> | <funcCall> | identifier
+<expression>		:= ( <expression> ) | <sub> | <assign> | <funcCall> | identifier | <logic>
+
+<logic>			:= <leq>
+<leq>			:= <expression> <= <not> | <not>
+<or>			:= <expression> | <and> | <and>
+<and>			:= <expression> & <not> | <not>
+<not>			:= ! <expression>
 
 <arglist>		:= identifier , <arglist> | identifier | epsilon
 <paramlist>		:= <expression> , <paramlist> | <expression> | epsilon
