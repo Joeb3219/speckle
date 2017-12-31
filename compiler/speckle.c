@@ -70,6 +70,10 @@ int main(int argc, char** argv){
 
 	printArguments(args);
 
+	FILE* file = fopen(args->inputFile, "r");
+	Token* head = tokenize(args, file);
+	fclose(file);
+
 	free(args);
 
 	return 0;

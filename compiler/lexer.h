@@ -7,7 +7,7 @@
 		CURLY_OPEN, CURLY_CLOSE, PAREN_OPEN, PAREN_CLOSE,
 		SEMICOLON, EQUALS_EQUALS, EQUALS, AND, OR,
 		MINUS, RET, FN, VAR, IF, WHILE,
-		IDENTIFIER, NUMBER, UNKNOWN
+		IDENTIFIER, NUMBER, UNKNOWN, END
 	};
 
 	typedef enum TokenType TokenType;
@@ -17,10 +17,18 @@
 		int colNo;
 		char* data;
 		TokenType type;
+		struct Token* next;
+		struct Token* prev;
 	};
 
 	typedef struct Token Token;
 
-	Token** tokenize(Arguments* args, FILE* file);
+	void printToken(FILE* output, Token* token);
+	void printTokens(FILE* output, Token* head);
+	void identifyToken(Token* token);
+	Token* tokenize(Arguments* args, FILE* file);
+	Token* createToken();
+	void freeToken(Token* token);
+
 
 #endif
