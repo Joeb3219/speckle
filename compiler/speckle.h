@@ -3,6 +3,9 @@
 
 	struct Arguments{
 		int help;
+		int printTokens;
+		char* outputName;
+		char* inputFile;
 	};
 
 	typedef struct Arguments Arguments;

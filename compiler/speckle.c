@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "speckle.h"
+#include "lexer.h"
 
 #define flagSet(A) (isFlagSet(argc, argv, A))
 #define getArgOrDefault(A, B) ((getArgumentFollowingFlag(argc, argv, A) == NULL) ? B : getArgumentFollowingFlag(argc, argv, A))
@@ -28,6 +29,19 @@ int isFlagSet(int argc, char** argv, char* flag){
         return 0;
 }
 
+void printArguments(Arguments* args){
+	printf("=============================================\n");
+	printf("=             Speckle Arguments             =\n");
+	printf("=============================================\n");
+	printf("Help flag:\t\t%d\n", args->help);
+	printf("Print Tokens:\t\t%d\n", args->printTokens);
+	printf("Output Name:\t\t%s\n", args->outputName);
+	printf("Input File:\t\t%s\n", args->inputFile);
+	printf("=============================================\n");
+	printf("=           End Speckle Arguments           =\n");
+	printf("=============================================\n");
+}
+
 // Returns a struct pointer to an Arguments struct representing the entire arguments list the user passed.
 // This function handles setting every flag, including default values if not set, etc.
 // Will return NULL on error.
@@ -35,6 +49,9 @@ Arguments* getArguments(int argc, char** argv){
 	Arguments* args = malloc(sizeof(Arguments));
 
 	args->help = flagSet("-h") || flagSet("--help");
+	args->printTokens = flagSet("-t") || flagSet("--tokens");
+	args->outputName = getArgOrDefault("-o", "a.out");
+	args->inputFile = getArgOrDefault("-f", NULL);
 
 	return args;
 }
@@ -42,12 +59,16 @@ Arguments* getArguments(int argc, char** argv){
 int main(int argc, char** argv){
 	Arguments* args = getArguments(argc, argv);
 
-	if(args == NULL || args->help){
-		printf("Usage: %s <parameters>\n", argv[0]);
+	if(args == NULL || args->help || args->inputFile == NULL){
+		printf("Usage: %s -f <file> <parameters>\n", argv[0]);
 		printf("Parameters:\n");
 		printf("\t-h:\tHelp, prints this dialog\n");
+		printf("\t-t:\tPrint tokens, if set will print out the parsed tokens.\n");
 		printf("\t-o:\tOutput filename\n");
+		printf("\t-f\tInput file\n");
 	}
+
+	printArguments(args);
 
 	free(args);
 
