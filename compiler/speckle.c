@@ -52,6 +52,7 @@ Arguments* getArguments(int argc, char** argv){
 	args->printTokens = flagSet("-t") || flagSet("--tokens");
 	args->outputName = getArgOrDefault("-o", "a.out");
 	args->inputFile = getArgOrDefault("-f", NULL);
+	args->reconstruct = flagSet("-r") || flagSet("--reconstruct");
 
 	return args;
 }
@@ -65,7 +66,8 @@ int main(int argc, char** argv){
 		printf("\t-h:\tHelp, prints this dialog\n");
 		printf("\t-t:\tPrint tokens, if set will print out the parsed tokens.\n");
 		printf("\t-o:\tOutput filename\n");
-		printf("\t-f\tInput file\n");
+		printf("\t-f:\tInput file\n");
+		printf("\t-r:\tReconstruct Source, if set will reconstruct source from tokens and the AST separately.\n");
 	}
 
 	printArguments(args);

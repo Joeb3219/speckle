@@ -5,6 +5,7 @@
 #include "speckle.h"
 
 #define MAX_TOKEN_SIZE 32
+#define LONGEST_STATIC_TOKEN 5
 
 Token* createToken(){
 	Token* token = malloc(sizeof(Token));
@@ -20,13 +21,148 @@ void freeToken(Token* token){
 	free(token);
 }
 
-void identifyToken(Token* token){
-	token->type = END;
+void identifyToken(Token* token, FILE* file){
+	if(token == NULL) return;
+	if(token->data == NULL || strlen(token->data) == 0) token->type = END;
+	
+	size_t originalSize = strlen(token->data);
+
+	TokenType type = -1;
+
+	// Test if it's a number or an identifier
+	while( type == -1 && strlen(token->data) > LONGEST_STATIC_TOKEN){
+		if(isNumber(token)) type = NUMBER;
+		else if(isIdentifier(token)) type = IDENTIFIER;
+		else token->data[strlen(token->data) - 1] = '\0';
+	}
+
+	if( type == -1 && strlen(token->data) == 5 ){
+		if(strcmp("ret", token->data) == 0) type = RET;
+		else if(strcmp("var", token->data) == 0) type = VAR;
+		else if(isNumber(token)) type = NUMBER;
+		else if(isIdentifier(token)) type = IDENTIFIER;
+		else token->data[strlen(token->data) - 1] = '\0';
+	}
+
+	if( type == -1 && strlen(token->data) == 4 ){
+		if(isNumber(token)) type = NUMBER;
+		else if(isIdentifier(token)) type = IDENTIFIER;
+		else token->data[strlen(token->data) - 1] = '\0';
+	}
+
+
+	if( type == -1 && strlen(token->data) == 3 ){
+		if(strcmp("ret", token->data) == 0) type = RET;
+		else if(strcmp("var", token->data) == 0) type = VAR;
+		else if(isNumber(token)) type = NUMBER;
+		else if(isIdentifier(token)) type = IDENTIFIER;
+		else token->data[strlen(token->data) - 1] = '\0';
+	}
+
+
+	if( type == -1 && strlen(token->data) == 2 ){
+		if(strcmp("fn", token->data) == 0) type = FN;
+		else if(strcmp("if", token->data) == 0) type = IF;
+		else if(strcmp("<=", token->data) == 0) type = LEQ;
+		else if(strcmp("==", token->data) == 0) type = EQUALS_EQUALS;
+		else if(isNumber(token)) type = NUMBER;
+		else if(isIdentifier(token)) type = IDENTIFIER;
+		else token->data[strlen(token->data) - 1] = '\0';
+	}
+
+	if( type == -1 && strlen(token->data) == 1){
+		if(strcmp("{", token->data) == 0) type = CURLY_OPEN;
+		else if(strcmp("}", token->data) == 0) type = CURLY_CLOSE;
+		else if(strcmp("(", token->data) == 0) type = PAREN_OPEN;
+		else if(strcmp(")", token->data) == 0) type = PAREN_CLOSE;
+		else if(strcmp(";", token->data) == 0) type = SEMICOLON;
+		else if(strcmp("=", token->data) == 0) type = EQUALS;
+		else if(strcmp("!", token->data) == 0) type = NOT;
+		else if(strcmp("&", token->data) == 0) type = AND;
+		else if(strcmp("|", token->data) == 0) type = OR;
+		else if(strcmp("-", token->data) == 0) type = MINUS;
+		else if(isNumber(token)) type = NUMBER;
+		else if(isIdentifier(token)) type = IDENTIFIER;
+		else token->data[strlen(token->data) - 1] = '\0';
+	}
+
+	if( type == -1 ) type = UNKNOWN;
+
+	// Now that we've possibly subtracted some bytes from the data segment, we will go ahead and move the file pointer back that many bytes.
+	originalSize -= strlen(token->data) - 1;
+	fseek(file, -originalSize, SEEK_CUR);
+	token->type = type;
+
 }
 
 
+char* typeToText(TokenType type){
+	switch(type){
+		case CURLY_OPEN: return "CURLY OPEN";
+		case CURLY_CLOSE: return "CURLY CLOSE";
+		case PAREN_OPEN: return "PAREN OPEN";
+		case PAREN_CLOSE: return "PAREN CLOSE";
+		case SEMICOLON: return "SEMICOLON";
+		case EQUALS_EQUALS: return "EQUALS EQUALS";
+		case EQUALS: return "EQUALS";
+		case AND: return "AND";
+		case OR: return "OR";
+		case LEQ: return "LEQ";
+		case NOT: return "NOT";
+		case MINUS: return "MINUS";
+		case RET: return "RET";
+		case FN: return "FN";
+		case VAR: return "VAR";
+		case IF: return "IF";
+		case WHILE: return "WHILE";
+		case IDENTIFIER: return "IDENT";
+		case NUMBER: return "NUMBER";
+		case UNKNOWN: return "UNKNOWN";
+		case END: return "END";
+		default: return "ERROR";
+	}
+}
+
+int isIdentifier(Token* token){
+	int i;
+	char c;
+	for(i = 0; i < strlen(token->data); i ++){
+		c = token->data[i];
+		if(i == 0 && !( (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) return 0;
+		else if(!( (c >= '0' && c <= '9') || (c == '_') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) return 0;
+	}
+	return 1;
+}
+
+// Examples of valid numbers: +123, -123, 123, 1234
+// Examples of invalid numbers: 1sd4, -+2, -, +, 34+, +a
+int isNumber(Token* token){
+	int i = 0;
+	int start = 0;
+	if(token == NULL || token->data == NULL || strlen(token->data) == 0) return 0;
+	if(token->data[0] == '+' || token->data[0] == '-'){
+		if(strlen(token->data) == 1) return 0;
+		start = 1;
+	}
+	for(i = start; i < strlen(token->data); i ++){
+		if(token->data[i] < '0' || token->data[i] > '9') return 0;
+	}
+	return 1;
+}
+
+
+void reconstructTokens(FILE* output, Token* head){
+	fprintf(output, "RECONSTRUCTING\n");
+	while(head != NULL){
+		fprintf(output, "%s ", head->data);
+		head = head->next;
+	}
+	fprintf(output, "\n");
+	fprintf(output, "END RECONSTRUCTING\n");
+}
+
 void printToken(FILE* output, Token* token){
-	fprintf(output, "{%d:%d, D: %s, T: %0X}\n", token->lineNo, token->colNo, "test", token->type);
+	fprintf(output, "{%d:%d, D: %s, T: %s}\n", token->lineNo, token->colNo, token->data, typeToText(token->type));
 }
 
 void printTokens(FILE* output, Token* head){
@@ -60,28 +196,34 @@ Token* tokenize(Arguments* args, FILE* file){
 		}
 		
 		// Any spacing elements should be handled to create a new token.
-		if(c == ' ' || c == '\t' || c == '\n'){
+		if(i == 31 || c == ' ' || c == '\t' || c == '\n'){
 			if(c == '\n'){
 				lineNo ++;
 				colNo = -1;
 			}
 
-			identifyToken(current);
+			if(i == 0){
+				continue;
+			}
 
-			i = 0;
+			current->data[i++] = '\0';
+			identifyToken(current, file);
 			// Create a new token and link them up.
 			current->next = createToken();
 			current->next->prev = current;
 			current = current->next;
 			current->lineNo = lineNo;
-			current->colNo = colNo;
+			if(c == '\n') current->colNo = 0;
+			else current->colNo = colNo;
 
+			i = 0;
 			continue;			
 		}
 		current->data[i ++] = c;
 	}
 
-	identifyToken(current);
+	current->data[i++] = '\0';
+	identifyToken(current, file);
 	if(current->type != END){
 		current->next = createToken();
 			current->next->prev = current;
@@ -92,6 +234,7 @@ Token* tokenize(Arguments* args, FILE* file){
 	}
 
 	if(args->printTokens) printTokens(stdout, head);
+	if(args->reconstruct) reconstructTokens(stdout, head);
 
 	return head;
 }

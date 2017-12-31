@@ -4,6 +4,7 @@
 	struct Arguments{
 		int help;
 		int printTokens;
+		int reconstruct;
 		char* outputName;
 		char* inputFile;
 	};
