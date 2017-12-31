@@ -153,7 +153,12 @@ int isNumber(Token* token){
 
 void reconstructTokens(FILE* output, Token* head){
 	fprintf(output, "RECONSTRUCTING\n");
+	int currentLine = 0;
 	while(head != NULL){
+		while(currentLine < head->lineNo){
+			fprintf(output, "\n");
+			currentLine ++;
+		}
 		fprintf(output, "%s ", head->data);
 		head = head->next;
 	}
@@ -197,17 +202,23 @@ Token* tokenize(Arguments* args, FILE* file){
 		
 		// Any spacing elements should be handled to create a new token.
 		if(i == 31 || c == ' ' || c == '\t' || c == '\n'){
-			if(c == '\n'){
-				lineNo ++;
-				colNo = -1;
-			}
-
 			if(i == 0){
 				continue;
 			}
 
 			current->data[i++] = '\0';
 			identifyToken(current, file);
+
+
+			// identifyToken may move back the file pointer.
+			// If it did, and we are no longer at a new line, we don't have to increment the lineNo anymore.
+			c = fgetc(file);
+			ungetc(c, file);
+			if(c == '\n'){
+				lineNo ++;
+				colNo = -1;
+			}
+
 			// Create a new token and link them up.
 			current->next = createToken();
 			current->next->prev = current;
@@ -215,15 +226,20 @@ Token* tokenize(Arguments* args, FILE* file){
 			current->lineNo = lineNo;
 			if(c == '\n') current->colNo = 0;
 			else current->colNo = colNo;
-
+		
 			i = 0;
-			continue;			
+			continue;	
 		}
 		current->data[i ++] = c;
 	}
 
-	current->data[i++] = '\0';
-	identifyToken(current, file);
+	if( i != 0 ){
+		current->data[i++] = '\0';
+		identifyToken(current, file);
+	}else{
+		if(current != NULL && current->prev != NULL) current = current->prev;
+	}
+	
 	if(current->type != END){
 		current->next = createToken();
 			current->next->prev = current;
