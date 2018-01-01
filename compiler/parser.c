@@ -45,7 +45,7 @@ void parseStmtList(Lexeme* head){
 	Lexeme* stmtList = createLexeme(LEX_STMTLIST);
 	addChild(head, stmtList);
 
-	if(isTokenType(END)) return;
+	if(isTokenType(END) || isTokenType(CURLY_CLOSE) ) return;
 	parseStmt(stmtList);
 	if(!isTokenType(SEMICOLON)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), SEMICOLON);
 	consume();
@@ -98,7 +98,7 @@ void parseFunc(Lexeme* head){
 	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
 	consume();
 
-	parseArgList(func);
+	parseParamList(func);
 
 	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
 	consume();
@@ -113,19 +113,42 @@ void parseFunc(Lexeme* head){
 
 
 void parseReturn(Lexeme* head){
+	Lexeme* ret = createLexeme(LEX_RETURN);
+	addChild(head, ret);
 
+	if(!isTokenType(RET)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), RET);
+	consume();
+
+	parseExpression(ret);
 }
 
 void parseFuncCall(Lexeme* head){
+	Lexeme* funcCall = createLexeme(LEX_FUNCCALL);
+	addChild(head, funcCall);
 
+	parseIdentifier(funcCall);
+
+	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
+	consume();
+
+	parseArgList(funcCall);
+
+	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
+	consume();
 }
 
 //expressionNonMath := ( <expression> ) | <assign> | <funcCall> | identifier | <logic>
 void parseExpressionNonMath(Lexeme* head){
+
 	Lexeme* expression = createLexeme(LEX_EXPRESSION_NONMATH);
 	addChild(head, expression);
 
-	if(isPeekType(EQUALS)){
+	if(isTokenType(PAREN_OPEN)){
+		consume();
+		parseExpression(expression);
+		if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
+		consume();
+	}else if(isPeekType(EQUALS)){
 		parseAssign(expression);
 	}else if(isPeekType(PAREN_OPEN)){
 		parseFuncCall(expression);
@@ -141,12 +164,7 @@ void parseExpression(Lexeme* head){
 	addChild(head, expression);
 
 
-	if(isTokenType(PAREN_OPEN)){
-		consume();
-		parseExpression(expression);
-		if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
-		consume();
-	}else if(isPeekType(MINUS)) parseSub(expression);
+	if(isPeekType(MINUS) && !isTokenType(PAREN_OPEN)) parseSub(expression);
 	else parseExpressionNonMath(expression);
 }
 
@@ -171,29 +189,88 @@ void parseAnd(Lexeme* head){
 }
 
 void parseNot(Lexeme* head){
+	Lexeme* not = createLexeme(LEX_NOT);
+	addChild(head, not);
 
+	if(!isTokenType(NOT)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), NOT);
+	parseExpression(not);
 }
 
 void parseArgList(Lexeme* head){
+	Lexeme* argList = createLexeme(LEX_ARGLIST);
+	addChild(head, argList);
 
+	if(isPeekType(COMMA)){
+		parseIdentifier(argList);
+		consume();
+		parseArgList(argList);
+	}else if(!isTokenType(PAREN_CLOSE)){
+		parseIdentifier(argList);
+	}
 }
 
 void parseParamList(Lexeme* head){
+	Lexeme* paramList = createLexeme(LEX_ARGLIST);
+	addChild(head, paramList);
 
+	if(isPeekType(COMMA)){
+		parseExpression(paramList);
+		consume();
+		parseParamList(paramList);
+	}else if(!isTokenType(PAREN_CLOSE)){
+		parseExpression(paramList);
+	}
 }
 
 void parseIf(Lexeme* head){
+	Lexeme* ifLex = createLexeme(LEX_WHILE);
+	addChild(head, ifLex);
 
+	if(!isTokenType(WHILE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), WHILE);
+	consume();
+	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
+	consume();
+	
+	parseExpression(ifLex);
+
+	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
+	consume();
+
+	if(!isTokenType(CURLY_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_OPEN);
+	consume();
+
+	parseStmtList(ifLex);
+
+	if(!isTokenType(CURLY_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_CLOSE);
+	consume();
 }
 
 void parseWhile(Lexeme* head){
+	Lexeme* whileLex = createLexeme(LEX_WHILE);
+	addChild(head, whileLex);
 
+	if(!isTokenType(WHILE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), WHILE);
+	consume();
+	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
+	consume();
+	
+	parseArgList(whileLex);
+
+	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
+	consume();
+
+	if(!isTokenType(CURLY_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_OPEN);
+	consume();
+
+	parseStmtList(whileLex);
+
+	if(!isTokenType(CURLY_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_CLOSE);
+	consume();
 }
 
 //<sub>			:= <expressionNonMath> - <expression>
 //<sub>			:= -<expression>
 void parseSub(Lexeme* head){
-//	printAST("--", head->parent->parent->parent->parent->parent->parent->parent);
 	Lexeme* sub = createLexeme(LEX_SUB);
 	addChild(head, sub);
 

@@ -1,4 +1,4 @@
 var x = 20;
-var y = -100;
+var      y  =      -100;
 var z = x - z;
-z = (x - x) - z;
+z = y - x - z;

@@ -82,6 +82,7 @@ void identifyToken(Token* token, FILE* file){
 		else if(strcmp("&", token->data) == 0) type = AND;
 		else if(strcmp("|", token->data) == 0) type = OR;
 		else if(strcmp("-", token->data) == 0) type = MINUS;
+		else if(strcmp(",", token->data) == 0) type = COMMA;
 		else if(isNumber(token)) type = NUMBER;
 		else if(isIdentifier(token)) type = IDENTIFIER;
 		else token->data[strlen(token->data) - 1] = '\0';
@@ -120,6 +121,7 @@ char* typeToText(TokenType type){
 		case NUMBER: 		return "NUMBER";
 		case UNKNOWN: 		return "UNKNOWN";
 		case END: 			return "END";
+		case COMMA:			return "COMMA";
 		default: 			return "ERROR";
 	}
 }
