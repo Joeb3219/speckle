@@ -98,7 +98,7 @@ void parseFunc(Lexeme* head){
 	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
 	consume();
 
-	parseParamList(func);
+	parseArgList(func);
 
 	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
 	consume();
@@ -131,7 +131,7 @@ void parseFuncCall(Lexeme* head){
 	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
 	consume();
 
-	parseArgList(funcCall);
+	parseParamList(funcCall);
 
 	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
 	consume();
@@ -152,7 +152,7 @@ void parseExpressionNonMath(Lexeme* head){
 		parseAssign(expression);
 	}else if(isPeekType(PAREN_OPEN)){
 		parseFuncCall(expression);
-	}else if(isPeekType(AND) || isPeekType(OR) || isPeekType(NOT) || isPeekType(EQUALS_EQUALS) || isPeekType(LEQ)){
+	}else if(isTokenType(AND) || isTokenType(OR) || isTokenType(NOT) || isTokenType(EQUALS_EQUALS) || isTokenType(LEQ)){
 		parseLogic(expression);
 	}else if(isTokenType(IDENTIFIER)) parseIdentifier(expression);
 	else if(isTokenType(NUMBER)) parseNumber(expression);
@@ -164,35 +164,80 @@ void parseExpression(Lexeme* head){
 	addChild(head, expression);
 
 
-	if(isPeekType(MINUS) && !isTokenType(PAREN_OPEN)) parseSub(expression);
+	if(isTokenType(MINUS)) parseSub(expression);
 	else parseExpressionNonMath(expression);
 }
 
+// <logic>			:= <leq>
+// <leq>			:= <= <expression> <equals> | <equals>
+// <equals>		:= == <expresion> <or> | <or>
+// <or>			:= | <expression> <and> | <and>
+// <and>			:= & <expression> <not> | <not>
+// <not>			:= ! <expression>
 void parseLogic(Lexeme* head){
+	Lexeme* logic = createLexeme(LEX_LOGIC);
+	addChild(head, logic);
 
+	parseLeq(logic);
 }
 
 void parseLeq(Lexeme* head){
+	Lexeme* leq = createLexeme(LEX_LEQ);
+	addChild(head, leq);
 
+	if(isTokenType(LEQ)){
+		consume();
+		parseExpression(leq);
+		parseEquals(leq);
+	}else{
+		parseEquals(leq);
+	}
 }
 
 void parseEquals(Lexeme* head){
+	Lexeme* equals = createLexeme(LEX_EQUALS);
+	addChild(head, equals);
 
+	if(isTokenType(EQUALS_EQUALS)){
+		consume();
+		parseExpression(equals);
+		parseOr(equals);
+	}else{
+		parseOr(equals);
+	}
 }
 
 void parseOr(Lexeme* head){
+	Lexeme* or = createLexeme(LEX_OR);
+	addChild(head, or);
 
+	if(isTokenType(OR)){
+		consume();
+		parseExpression(or);
+		parseAnd(or);
+	}else{
+		parseAnd(or);
+	}
 }
 
 void parseAnd(Lexeme* head){
+	Lexeme* and = createLexeme(LEX_AND);
+	addChild(head, and);
 
+	if(isTokenType(AND)){
+		consume();
+		parseExpression(and);
+		parseNot(and);
+	}else{
+		parseNot(and);
+	}
 }
 
 void parseNot(Lexeme* head){
 	Lexeme* not = createLexeme(LEX_NOT);
 	addChild(head, not);
 
-	if(!isTokenType(NOT)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), NOT);
+	if(isTokenType(NOT)) consume(); 
 	parseExpression(not);
 }
 
@@ -253,8 +298,8 @@ void parseWhile(Lexeme* head){
 	consume();
 	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
 	consume();
-	
-	parseArgList(whileLex);
+
+	parseExpression(whileLex);
 
 	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
 	consume();
@@ -274,17 +319,13 @@ void parseSub(Lexeme* head){
 	Lexeme* sub = createLexeme(LEX_SUB);
 	addChild(head, sub);
 
-	if(isTokenType(MINUS)){
-		consume();
-		parseExpression(sub);
-	}else{
-		parseExpressionNonMath(sub);
-
-		if(!isTokenType(MINUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), MINUS);
-		consume();
-
-		parseExpression(sub);
-	}
+	if(!isTokenType(MINUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), MINUS);
+		
+	consume();
+		
+	parseExpression(sub);
+	
+	parseExpression(sub);
 }
 
 

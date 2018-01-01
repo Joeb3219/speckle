@@ -19,11 +19,11 @@ number: [+-]^?[0-9][0-9]^?
 <expressionNonMath> := ( <expression> ) | <assign> | <funcCall> | identifier | <logic>
 
 <logic>			:= <leq>
-<leq>			:= <expression> <= <equals> | <equals>
-<equals>		:= <expresion> == <or> | <or>
-<or>			:= <expression> | <and> | <and>
-<and>			:= <expression> & <not> | <not>
-<not>			:= ! <expression>
+<leq>			:= <= <expression> <equals> | <equals>
+<equals>		:= == <expresion> <or> | <or>
+<or>			:= | <expression> <and> | <and>
+<and>			:= & <expression> <not> | <not>
+<not>			:= ! <expression> | <expression>
 
 <arglist>		:= identifier , <arglist> | identifier | epsilon
 <paramlist>		:= <expression> , <paramlist> | <expression> | epsilon
@@ -31,4 +31,4 @@ number: [+-]^?[0-9][0-9]^?
 <if>			:= if ( <expression> ) { <stmtlist> }
 <while>			:= while ( <expression> ) { <stmtlist> }
 
-<sub>			:= <expression> - <sub> | <expression>
+<sub>			:= - <expression> <sub> | <expression>

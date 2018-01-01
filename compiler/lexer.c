@@ -38,8 +38,7 @@ void identifyToken(Token* token, FILE* file){
 	}
 
 	if( type == -1 && strlen(token->data) == 5 ){
-		if(strcmp("ret", token->data) == 0) type = RET;
-		else if(strcmp("var", token->data) == 0) type = VAR;
+		if(strcmp("while", token->data) == 0) type = WHILE;
 		else if(isNumber(token)) type = NUMBER;
 		else if(isIdentifier(token)) type = IDENTIFIER;
 		else token->data[strlen(token->data) - 1] = '\0';
@@ -157,9 +156,10 @@ int isNumber(Token* token){
 void reconstructTokens(FILE* output, Token* head){
 	fprintf(output, "RECONSTRUCTING\n");
 	int currentLine = 0;
+	printf("[0]:");
 	while(head != NULL){
 		while(currentLine < head->lineNo){
-			fprintf(output, "\n");
+			fprintf(output, "\n[%d]: ", currentLine + 1);
 			currentLine ++;
 		}
 		fprintf(output, "%s ", head->data);
