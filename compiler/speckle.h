@@ -5,6 +5,7 @@
 		int help;
 		int printTokens;
 		int reconstruct;
+		int printAST;
 		char* outputName;
 		char* inputFile;
 	};

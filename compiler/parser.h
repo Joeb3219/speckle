@@ -9,7 +9,9 @@
 		LEX_FUNC, LEX_FUNCCALL, LEX_EXPRESSION, LEX_RETURN,
 		LEX_LOGIC, LEX_LEQ, LEX_EQUALS, LEX_OR, LEX_AND, LEX_NOT,
 		LEX_ARGLIST, LEX_PARAMLIST,
-		LEX_IF, LEX_WHILE, LEX_SUB
+		LEX_IF, LEX_WHILE, LEX_SUB,
+		LEX_IDENTIFIER, LEX_NUMBER,
+		LEX_EXPRESSION_NONMATH
 	};
 
 	typedef enum LexemeType LexemeType;
@@ -20,10 +22,13 @@
 		struct Lexeme* nextSibling;
 		struct Lexeme* prevSibling;
 		Token* token;
+		LexemeType type;
 	};
 
 	typedef struct Lexeme Lexeme;
 
+	void parseIdentifier(Lexeme* head);
+	void parseNumber(Lexeme* head);
 	void parseProgram(Lexeme* head);
 	void parseStmtList(Lexeme* head);
 	void parseStmt(Lexeme* head);
@@ -32,6 +37,7 @@
 	void parseFunc(Lexeme* head);
 	void parseReturn(Lexeme* head);
 	void parseFuncCall(Lexeme* head);
+	void parseExpressionNonMath(Lexeme* head);
 	void parseExpression(Lexeme* head);
 	void parseLogic(Lexeme* head);
 	void parseLeq(Lexeme* head);
@@ -45,6 +51,7 @@
 	void parseWhile(Lexeme* head);
 	void parseSub(Lexeme* head);
 	
+	void printAST(char* prefix, Lexeme* head);
 	void addChild(Lexeme* parent, Lexeme* child);
 	void destroyTree(Lexeme* head);
 	Lexeme* createLexeme();

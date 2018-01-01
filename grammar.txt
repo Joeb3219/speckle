@@ -9,12 +9,14 @@ number: [+-]^?[0-9][0-9]^?
 <stmtlist>		:= <stmt> ; <stmtlist> | epsilon
 <stmt>			:= <func> | <declaration> | <expression> | <while> | <return> | <if>
 
+<return>		:= 
 <declaration>	:= var <assign>
 <assign>		:= identifier = <expression>
 
 <func>			:= fn identifier ( <arglist> ) { <stmtlist> }
 <funcCall>		:= identifier ( <paramlist> )
-<expression>	:= ( <expression> ) | <sub> | <assign> | <funcCall> | identifier | <logic>
+<expression>	:= <sub> | <expressionNonMath>
+<expressionNonMath> := ( <expression> ) | <assign> | <funcCall> | identifier | <logic>
 
 <logic>			:= <leq>
 <leq>			:= <expression> <= <equals> | <equals>
