@@ -27,6 +27,8 @@
 
 	typedef struct Lexeme Lexeme;
 
+	char* lexemeTypeToChar(LexemeType type);
+
 	void parseIdentifier(Lexeme* head);
 	void parseNumber(Lexeme* head);
 	void parseProgram(Lexeme* head);

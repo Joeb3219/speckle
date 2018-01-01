@@ -99,28 +99,28 @@ void identifyToken(Token* token, FILE* file){
 
 char* typeToText(TokenType type){
 	switch(type){
-		case CURLY_OPEN: return "CURLY OPEN";
-		case CURLY_CLOSE: return "CURLY CLOSE";
-		case PAREN_OPEN: return "PAREN OPEN";
-		case PAREN_CLOSE: return "PAREN CLOSE";
-		case SEMICOLON: return "SEMICOLON";
+		case CURLY_OPEN: 	return "CURLY OPEN";
+		case CURLY_CLOSE:	return "CURLY CLOSE";
+		case PAREN_OPEN: 	return "PAREN OPEN";
+		case PAREN_CLOSE: 	return "PAREN CLOSE";
+		case SEMICOLON: 	return "SEMICOLON";
 		case EQUALS_EQUALS: return "EQUALS EQUALS";
-		case EQUALS: return "EQUALS";
-		case AND: return "AND";
-		case OR: return "OR";
-		case LEQ: return "LEQ";
-		case NOT: return "NOT";
-		case MINUS: return "MINUS";
-		case RET: return "RET";
-		case FN: return "FN";
-		case VAR: return "VAR";
-		case IF: return "IF";
-		case WHILE: return "WHILE";
-		case IDENTIFIER: return "IDENT";
-		case NUMBER: return "NUMBER";
-		case UNKNOWN: return "UNKNOWN";
-		case END: return "END";
-		default: return "ERROR";
+		case EQUALS: 		return "EQUALS";
+		case AND: 			return "AND";
+		case OR: 			return "OR";
+		case LEQ: 			return "LEQ";
+		case NOT: 			return "NOT";
+		case MINUS: 		return "MINUS";
+		case RET: 			return "RET";
+		case FN: 			return "FN";
+		case VAR: 			return "VAR";
+		case IF: 			return "IF";
+		case WHILE: 		return "WHILE";
+		case IDENTIFIER: 	return "IDENT";
+		case NUMBER: 		return "NUMBER";
+		case UNKNOWN: 		return "UNKNOWN";
+		case END: 			return "END";
+		default: 			return "ERROR";
 	}
 }
 
@@ -187,6 +187,7 @@ void printTokens(FILE* output, Token* head){
 // Next, we go pass the read string through from the end and narrow down until we have a token of a valid size.
 Token* tokenize(Arguments* args, FILE* file){
 	char c;
+	int prevWasSpace = 0;
 	int i = 0;
 	int colNo = -1, lineNo = 0;
 	Token* current = createToken();
@@ -194,6 +195,7 @@ Token* tokenize(Arguments* args, FILE* file){
 
 	while( (c = fgetc(file)) != EOF){
 		colNo ++;
+		if(prevWasSpace == 1) current->colNo = colNo;
 
 		// A carriage return is bringing us back to the beginning of the line.
 		if(c == '\r'){
@@ -203,13 +205,14 @@ Token* tokenize(Arguments* args, FILE* file){
 		
 		// Any spacing elements should be handled to create a new token.
 		if(i == 31 || c == ' ' || c == '\t' || c == '\n'){
+			prevWasSpace = 1;
 			if(i == 0){
 				continue;
 			}
 
 			current->data[i++] = '\0';
 			identifyToken(current, file);
-
+			colNo -= (i - strlen(current->data));
 
 			// identifyToken may move back the file pointer.
 			// If it did, and we are no longer at a new line, we don't have to increment the lineNo anymore.
@@ -225,12 +228,12 @@ Token* tokenize(Arguments* args, FILE* file){
 			current->next->prev = current;
 			current = current->next;
 			current->lineNo = lineNo;
-			if(c == '\n') current->colNo = 0;
-			else current->colNo = colNo;
+			current->colNo = colNo + 1;
 		
 			i = 0;
 			continue;	
 		}
+		prevWasSpace = 0;
 		current->data[i ++] = c;
 	}
 

@@ -125,12 +125,7 @@ void parseExpressionNonMath(Lexeme* head){
 	Lexeme* expression = createLexeme(LEX_EXPRESSION_NONMATH);
 	addChild(head, expression);
 
-	if(isTokenType(PAREN_OPEN)){
-		consume();
-		parseExpression(expression);
-		if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
-		consume();
-	}else if(isPeekType(EQUALS)){
+	if(isPeekType(EQUALS)){
 		parseAssign(expression);
 	}else if(isPeekType(PAREN_OPEN)){
 		parseFuncCall(expression);
@@ -145,7 +140,13 @@ void parseExpression(Lexeme* head){
 	Lexeme* expression = createLexeme(LEX_EXPRESSION);
 	addChild(head, expression);
 
-	if(isPeekType(MINUS)) parseSub(expression);
+
+	if(isTokenType(PAREN_OPEN)){
+		consume();
+		parseExpression(expression);
+		if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
+		consume();
+	}else if(isPeekType(MINUS)) parseSub(expression);
 	else parseExpressionNonMath(expression);
 }
 
@@ -190,16 +191,23 @@ void parseWhile(Lexeme* head){
 }
 
 //<sub>			:= <expressionNonMath> - <expression>
+//<sub>			:= -<expression>
 void parseSub(Lexeme* head){
+//	printAST("--", head->parent->parent->parent->parent->parent->parent->parent);
 	Lexeme* sub = createLexeme(LEX_SUB);
 	addChild(head, sub);
 
-	parseExpressionNonMath(sub);
+	if(isTokenType(MINUS)){
+		consume();
+		parseExpression(sub);
+	}else{
+		parseExpressionNonMath(sub);
 
-	if(isTokenType(MINUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), MINUS);
-	consume();
+		if(!isTokenType(MINUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), MINUS);
+		consume();
 
-	parseExpression(sub);
+		parseExpression(sub);
+	}
 }
 
 
@@ -241,17 +249,48 @@ void printAST(char* prefix, Lexeme* head){
 	if(head == NULL) return;
 
 	printf(prefix);
-
-	Lexeme* single = head;
-	while(single != NULL){
-		printf("%s\t", single->type);
-	}
+	printf("%s: %s\t", lexemeTypeToChar(head->type), head->token->data);
 	printf("\n");
 
 	char buffer[256];
-	sprintf(buffer, "%s==\0", prefix);
-
+	sprintf(buffer, "%s--\0", prefix);
 	printAST(buffer, head->firstChild);
+
+	Lexeme* single = head->nextSibling;
+	while(single != NULL){
+		printAST(prefix, single);
+		single = single->nextSibling;
+	}
+}
+
+
+char* lexemeTypeToChar(LexemeType type){
+	switch(type){
+		case LEX_PROGRAM: return "PROGRAM";
+		case LEX_STMTLIST: return "STMTLIST";
+		case LEX_STMT: return "STMT";
+		case LEX_DECLARATION: return "DECLARATION";
+		case LEX_ASSIGN: return "ASSIGN"; 
+		case LEX_FUNC: return "FUNC";
+		case LEX_FUNCCALL: return "FUNCCALL";
+		case LEX_EXPRESSION: return "EXPRESSION";
+		case LEX_RETURN: return "RETURN";
+		case LEX_LOGIC: return "LOGIC";
+		case LEX_LEQ: return "LEQ";
+		case LEX_EQUALS: return "EQUALS";
+		case LEX_OR: return "OR";
+		case LEX_AND: return "AND";
+		case LEX_NOT: return "NOT";
+		case LEX_ARGLIST: return "ARGLIST";
+		case LEX_PARAMLIST: return "PARAMLIST";
+		case LEX_IF: return "IF";
+		case LEX_WHILE: return "WHILE";
+		case LEX_SUB: return "SUB";
+		case LEX_IDENTIFIER: return "IDENTIFIER";
+		case LEX_NUMBER: return "NUMBER";
+		case LEX_EXPRESSION_NONMATH: return "EXPRESSION_NONMATH";
+		default: return "ERROR";
+	}
 }
 
 Lexeme* parse(Arguments* args, Token* headToken){

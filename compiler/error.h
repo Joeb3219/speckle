@@ -13,7 +13,7 @@
 
 	// An error for an unexpected token. Expects the following parameters in order:
 	// Token that offended, expected type.
-	#define ERR_UNEXPECTED_TOKEN_EXPECTED(T, E) {ERR(SEVERE, T->lineNo, T->colNo, "Unexpected token, expected %s but found %s", typeToText(E), T->data)}
+	#define ERR_UNEXPECTED_TOKEN_EXPECTED(T, E) {ERR(SEVERE, T->lineNo, T->colNo, "Unexpected token, expected %s but found %s (%s)", typeToText(E), T->data, typeToText(T->type))}
 
 	// An error for an unexpected token. Expects the following parameters in order:
 	// Token that offended, expected type.
