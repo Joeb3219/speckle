@@ -5,6 +5,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "error.h"
+#include "codegen.h"
 
 #define flagSet(A) (isFlagSet(argc, argv, A))
 #define getArgOrDefault(A, B) ((getArgumentFollowingFlag(argc, argv, A) == NULL) ? B : getArgumentFollowingFlag(argc, argv, A))
@@ -82,9 +83,17 @@ int main(int argc, char** argv){
 	Token* head = tokenize(args, file);
 	fclose(file);
 
-	Lexeme* program = parse(args, head);
+	Lexeme* lexemes = parse(args, head);
 
-	destroyTree(program);
+	Program* program = lexemesToProgram(lexemes);
+
+	destroyTree(lexemes);
+
+	while(head != NULL){
+		Token* next = head->next;
+		freeToken(head);
+		head = next;
+	}
 
 	free(args);
 

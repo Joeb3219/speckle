@@ -5,9 +5,11 @@ number: [+-]^?[0-9][0-9]^?
 
 // Lexemes
 
-<program> 		:= <stmtlist>
+<program> 		:= <functions>
+<functions>		:= <func> <functions> | epsilon
+
 <stmtlist>		:= <stmt> ; <stmtlist> | epsilon
-<stmt>			:= <func> | <declaration> | <expression> | <while> | <return> | <if>
+<stmt>			:= <declaration> | <expression> | <while> | <return> | <if>
 
 <return>		:= 
 <declaration>	:= var <assign>

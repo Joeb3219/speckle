@@ -1,4 +1,7 @@
-var x = 20;
-var      y  =      -100;
-var z = - x z;
-z = - - y x z;
+fn main(){
+	var x = 20;
+	var      y  =      -100;
+	var z = - x z;
+	z = - - y x z;
+	ret 0;
+}

@@ -53,6 +53,16 @@ void parseStmtList(Lexeme* head){
 	parseStmtList(stmtList);
 }
 
+void parseFunctions(Lexeme* head){
+	Lexeme* functions = createLexeme(LEX_FUNCTIONS);
+	addChild(head, functions);
+
+	if(isTokenType(END) || isTokenType(CURLY_CLOSE) ) return;
+	parseFunc(functions);
+
+	parseFunctions(functions);
+}
+
 //<stmt>	:= <func> | <declaration> | <expression> | <while> | <return> | <if>
 void parseStmt(Lexeme* head){
 	Lexeme* stmt = createLexeme(LEX_STMT);
@@ -332,7 +342,7 @@ void parseSub(Lexeme* head){
 void parseProgram(Lexeme* head){
 	if(isTokenType(END)) ERR_UNEXPECTED_EOF(currentToken());
 	if(isTokenType(UNKNOWN)) ERR_UNEXPECTED_TOKEN(currentToken());
-	parseStmtList(head);
+	parseFunctions(head);
 
 	if(isTokenType(END)) return;
 	
@@ -407,6 +417,7 @@ char* lexemeTypeToChar(LexemeType type){
 		case LEX_IDENTIFIER: return "IDENTIFIER";
 		case LEX_NUMBER: return "NUMBER";
 		case LEX_EXPRESSION_NONMATH: return "EXPRESSION_NONMATH";
+		case LEX_FUNCTIONS: return "FUNCTIONS";
 		default: return "ERROR";
 	}
 }

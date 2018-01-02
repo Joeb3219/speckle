@@ -11,7 +11,7 @@
 		LEX_ARGLIST, LEX_PARAMLIST,
 		LEX_IF, LEX_WHILE, LEX_SUB,
 		LEX_IDENTIFIER, LEX_NUMBER,
-		LEX_EXPRESSION_NONMATH
+		LEX_EXPRESSION_NONMATH, LEX_FUNCTIONS
 	};
 
 	typedef enum LexemeType LexemeType;
@@ -33,6 +33,7 @@
 	void parseNumber(Lexeme* head);
 	void parseProgram(Lexeme* head);
 	void parseStmtList(Lexeme* head);
+	void parseFunctions(Lexeme* head);
 	void parseStmt(Lexeme* head);
 	void parseDeclaration(Lexeme* head);
 	void parseAssign(Lexeme* head);

@@ -1,8 +1,10 @@
 fn add(a, b){
 	var x = - a b;
 	ret - 0 x;
-};
+}
 
-var x = 8;
-var y = 10;
-var z = add(x, y);
+fn main(){
+	var x = 8;
+	var y = 10;
+	var z = add(x, y);
+}
