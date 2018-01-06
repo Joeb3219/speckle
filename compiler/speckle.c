@@ -85,7 +85,9 @@ int main(int argc, char** argv){
 
 	Lexeme* lexemes = parse(args, head);
 
-	Program* program = lexemesToProgram(lexemes);
+	FILE* output = fopen("a.asm", "w");
+	compileToASM(output, lexemes);
+	fclose(output);
 
 	destroyTree(lexemes);
 

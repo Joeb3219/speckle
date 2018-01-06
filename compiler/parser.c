@@ -12,6 +12,33 @@
 #define peek()			((currentToken() == NULL) ? NULL : currentToken()->next)
 #define isPeekType(T)	(peek() != NULL && peek()->type == T)
 
+// Private function definitions
+void parseIdentifier(Lexeme* head);
+void parseNumber(Lexeme* head);
+void parseProgram(Lexeme* head);
+void parseStmtList(Lexeme* head);
+void parseFunctions(Lexeme* head);
+void parseStmt(Lexeme* head);
+void parseDeclaration(Lexeme* head);
+void parseAssign(Lexeme* head);
+void parseFunc(Lexeme* head);
+void parseReturn(Lexeme* head);
+void parseFuncCall(Lexeme* head);
+void parseExpressionNonMath(Lexeme* head);
+void parseExpression(Lexeme* head);
+void parseLogic(Lexeme* head);
+void parseLeq(Lexeme* head);
+void parseEquals(Lexeme* head);
+void parseOr(Lexeme* head);
+void parseAnd(Lexeme* head);
+void parseNot(Lexeme* head);
+void parseArgList(Lexeme* head);
+void parseParamList(Lexeme* head);
+void parseIf(Lexeme* head);
+void parseWhile(Lexeme* head);
+void parseSub(Lexeme* head);
+	
+
 Token** current = NULL;
 
 void addChild(Lexeme* parent, Lexeme* child){
@@ -60,7 +87,7 @@ void parseFunctions(Lexeme* head){
 	if(isTokenType(END) || isTokenType(CURLY_CLOSE) ) return;
 	parseFunc(functions);
 
-	parseFunctions(functions);
+	parseFunctions(head);
 }
 
 //<stmt>	:= <func> | <declaration> | <expression> | <while> | <return> | <if>
@@ -372,12 +399,15 @@ void destroyTree(Lexeme* head){
 	destroyLexeme(head);
 }
 
+void printNode(Lexeme* node){
+	printf("%s: %s\t", lexemeTypeToChar(node->type), node->token->data);
+}
 
 void printAST(char* prefix, Lexeme* head){
 	if(head == NULL) return;
 
 	printf(prefix);
-	printf("%s: %s\t", lexemeTypeToChar(head->type), head->token->data);
+	printNode(head);
 	printf("\n");
 
 	char buffer[256];
@@ -430,4 +460,20 @@ Lexeme* parse(Arguments* args, Token* headToken){
 	if(args->printAST) printAST("", head);
 
 	return head;
+}
+
+
+void condenseTree(Lexeme* head){
+	Lexeme* child = head->firstChild;
+	switch(head->type){
+		case LEX_PROGRAM:
+			while(child != NULL){
+				condenseTree(child);
+				child = child->nextSibling;
+			}
+			break;
+		case LEX_FUNCTIONS:
+			break;
+			
+	}
 }

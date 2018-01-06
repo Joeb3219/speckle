@@ -29,31 +29,8 @@
 
 	char* lexemeTypeToChar(LexemeType type);
 
-	void parseIdentifier(Lexeme* head);
-	void parseNumber(Lexeme* head);
-	void parseProgram(Lexeme* head);
-	void parseStmtList(Lexeme* head);
-	void parseFunctions(Lexeme* head);
-	void parseStmt(Lexeme* head);
-	void parseDeclaration(Lexeme* head);
-	void parseAssign(Lexeme* head);
-	void parseFunc(Lexeme* head);
-	void parseReturn(Lexeme* head);
-	void parseFuncCall(Lexeme* head);
-	void parseExpressionNonMath(Lexeme* head);
-	void parseExpression(Lexeme* head);
-	void parseLogic(Lexeme* head);
-	void parseLeq(Lexeme* head);
-	void parseEquals(Lexeme* head);
-	void parseOr(Lexeme* head);
-	void parseAnd(Lexeme* head);
-	void parseNot(Lexeme* head);
-	void parseArgList(Lexeme* head);
-	void parseParamList(Lexeme* head);
-	void parseIf(Lexeme* head);
-	void parseWhile(Lexeme* head);
-	void parseSub(Lexeme* head);
-	
+	void condenseTree(Lexeme* head);
+	void printNode(Lexeme* node);
 	void printAST(char* prefix, Lexeme* head);
 	void addChild(Lexeme* parent, Lexeme* child);
 	void destroyTree(Lexeme* head);
