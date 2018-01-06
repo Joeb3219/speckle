@@ -35,7 +35,6 @@ void parseNot(Lexeme* head);
 void parseArgList(Lexeme* head);
 void parseParamList(Lexeme* head);
 void parseIf(Lexeme* head);
-void parseWhile(Lexeme* head);
 void parseSub(Lexeme* head);
 	
 
@@ -90,13 +89,12 @@ void parseFunctions(Lexeme* head){
 	parseFunctions(head);
 }
 
-//<stmt>	:= <func> | <declaration> | <expression> | <while> | <return> | <if>
+//<stmt>	:= <func> | <declaration> | <expression> | <return> | <if>
 void parseStmt(Lexeme* head){
 	Lexeme* stmt = createLexeme(LEX_STMT);
 	addChild(head, stmt);
 
-	if(isTokenType(WHILE)) parseWhile(stmt);
-	else if(isTokenType(IF)) parseIf(stmt);
+	if(isTokenType(IF)) parseIf(stmt);
 	else if(isTokenType(RET)) parseReturn(stmt);
 	else if(isTokenType(FN)) parseFunc(stmt);
 	else if(isTokenType(VAR)) parseDeclaration(stmt);
@@ -305,10 +303,10 @@ void parseParamList(Lexeme* head){
 }
 
 void parseIf(Lexeme* head){
-	Lexeme* ifLex = createLexeme(LEX_WHILE);
+	Lexeme* ifLex = createLexeme(LEX_IF);
 	addChild(head, ifLex);
 
-	if(!isTokenType(WHILE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), WHILE);
+	if(!isTokenType(IF)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), IF);
 	consume();
 	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
 	consume();
@@ -322,29 +320,6 @@ void parseIf(Lexeme* head){
 	consume();
 
 	parseStmtList(ifLex);
-
-	if(!isTokenType(CURLY_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_CLOSE);
-	consume();
-}
-
-void parseWhile(Lexeme* head){
-	Lexeme* whileLex = createLexeme(LEX_WHILE);
-	addChild(head, whileLex);
-
-	if(!isTokenType(WHILE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), WHILE);
-	consume();
-	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
-	consume();
-
-	parseExpression(whileLex);
-
-	if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
-	consume();
-
-	if(!isTokenType(CURLY_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_OPEN);
-	consume();
-
-	parseStmtList(whileLex);
 
 	if(!isTokenType(CURLY_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_CLOSE);
 	consume();
@@ -443,7 +418,6 @@ char* lexemeTypeToChar(LexemeType type){
 		case LEX_ARGLIST: return "ARGLIST";
 		case LEX_PARAMLIST: return "PARAMLIST";
 		case LEX_IF: return "IF";
-		case LEX_WHILE: return "WHILE";
 		case LEX_SUB: return "SUB";
 		case LEX_IDENTIFIER: return "IDENTIFIER";
 		case LEX_NUMBER: return "NUMBER";

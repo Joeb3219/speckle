@@ -38,8 +38,7 @@ void identifyToken(Token* token, FILE* file){
 	}
 
 	if( type == -1 && strlen(token->data) == 5 ){
-		if(strcmp("while", token->data) == 0) type = WHILE;
-		else if(isNumber(token)) type = NUMBER;
+		if(isNumber(token)) type = NUMBER;
 		else if(isIdentifier(token)) type = IDENTIFIER;
 		else token->data[strlen(token->data) - 1] = '\0';
 	}
@@ -115,7 +114,6 @@ char* typeToText(TokenType type){
 		case FN: 			return "FN";
 		case VAR: 			return "VAR";
 		case IF: 			return "IF";
-		case WHILE: 		return "WHILE";
 		case IDENTIFIER: 	return "IDENT";
 		case NUMBER: 		return "NUMBER";
 		case UNKNOWN: 		return "UNKNOWN";

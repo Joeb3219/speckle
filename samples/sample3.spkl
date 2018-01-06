@@ -5,14 +5,18 @@ fn add(a, b){
 
 fn mult(a, b){
 	var x = 0;
-	var i = 0;
 
-	while( <= i x ){
-		x = add(x, a);
-		i = add(i, 1);
+	if( <= b 0 ){
+		ret 0;
 	};
 
-	ret x;
+	if( == b 1 ){
+		ret a;
+	};
+
+	x = - b 1;
+	var intermediate = mult(a, x);
+	ret add(intermediate, a);
 }
 
 fn main(){
