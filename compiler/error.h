@@ -15,6 +15,10 @@
 	// Token that offended, expected type.
 	#define ERR_UNEXPECTED_TOKEN_EXPECTED(T, E) {ERR(SEVERE, T->lineNo, T->colNo, "Unexpected token, expected %s but found %s (%s)", typeToText(E), T->data, typeToText(T->type))}
 
+	// An error for an unexpected lexeme. Expects the following parameters in order:
+	// Lexeme that offended, expected type.
+	#define ERR_UNEXPECTED_LEXEME_EXPECTED(T, E) {ERR(SEVERE, T->token->lineNo, T->token->colNo, "Unexpected lexeme, expected %s but found %s (%s)", lexemeTypeToChar(E), T->token->data, lexemeTypeToChar(T->type))}
+
 	// An error for an unexpected token. Expects the following parameters in order:
 	// Token that offended, expected type.
 	#define ERR_UNEXPECTED_TOKEN(T) {ERR(SEVERE, T->lineNo, T->colNo, "Unexpected token: %s", T->data)}

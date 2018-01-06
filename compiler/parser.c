@@ -400,7 +400,8 @@ void destroyTree(Lexeme* head){
 }
 
 void printNode(Lexeme* node){
-	printf("%s: %s\t", lexemeTypeToChar(node->type), node->token->data);
+	if(node == NULL) printf("NULL NODE");
+	else printf("%s: %s\t", lexemeTypeToChar(node->type), node->token->data);
 }
 
 void printAST(char* prefix, Lexeme* head){
