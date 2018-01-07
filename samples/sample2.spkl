@@ -16,5 +16,10 @@ fn main(){
 	printn(z);
 	newline();
 
+	if ( 0 ){
+		printc(69);
+		newline();
+	};
+
 	ret 0;
 }

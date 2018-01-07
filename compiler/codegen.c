@@ -13,7 +13,7 @@
 #define PRINT_LABELS_IN_ASM 0
 
 // Private function declarations
-void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap);
+void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int* ifCounter);
 int findArguments(Lexeme* function, Hashmap* hashmap);
 Lexeme* findFirstLexemeOccurence(Lexeme* head, LexemeType type);
 void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter);
@@ -106,6 +106,36 @@ void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCo
 }
 
 void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter){
+	if(ifNode == NULL || ifNode->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#if\n");
+
+	// We generate two bodies: one for the jump, and one for not if the condition fails.
+
+	Lexeme* expression = findFirstLexemeOccurence(ifNode, LEX_EXPRESSION);
+	Lexeme* stmtlist = findFirstLexemeOccurence(ifNode, LEX_STMTLIST);
+
+	int currentIfCount = *ifCounter;
+	(*ifCounter) = currentIfCount + 1;
+
+	// First, we compile the expression.
+	// This will store some value in %rax
+	// If this value is equal to 1, we will do a jump to if_branch_%d_success
+	// Otherwise, we go to the fail branch.
+	compileExpression(file, expression, variables, ifCounter);
+
+	fprintf(file, "\tcmpq $1, %%rax\n");
+	fprintf(file, "\tje .if_branch_%d_success\n", currentIfCount);
+	// If we didn't jump previously, that means it's not equal, therefore we jump to the fail branch.
+	fprintf(file, "\tjmp .if_branch_%d_fail\n", currentIfCount);
+
+	// Now we start the success branch
+	fprintf(file, ".if_branch_%d_success:\n", currentIfCount);
+
+	// Now we can compile the statementlist
+	compileStmtlist(file, stmtlist, variables, ifCounter);
+
+	// Now we can compile the failure jump point
+	fprintf(file, ".if_branch_%d_fail:\n", currentIfCount);
 
 }
 
@@ -257,14 +287,13 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 	fprintf(file, "\tmovq %%rax, %d(%rbp)\n", variableOffset);
 }
 
-void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap){
+void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *ifCounter){
 	// Ensure that we are dealing with a function declaration
 	if(function->type != LEX_FUNC) ERR_UNEXPECTED_LEXEME_EXPECTED(function, LEX_FUNC);
 	Hashmap* variableMap = createHashmap();
 
 	int argCount = findArguments(function, variableMap);
 	int nextVariableAddress = -8;
-	int intMarker = 0;
 
 	Lexeme* identifier = findFirstLexemeOccurence(function, LEX_IDENTIFIER);
 	Lexeme* stmtlist = findFirstLexemeOccurence(function, LEX_STMTLIST);
@@ -280,7 +309,7 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap){
 	fprintf(file, "\tmovq %%rsp, %%rbp\n");
 	fprintf(file, "\tsubq $%d, %%rsp\n", -nextVariableAddress);
 
-	compileStmtlist(file, stmtlist, variableMap, &intMarker);
+	compileStmtlist(file, stmtlist, variableMap, ifCounter);
 
 	fprintf(file, "\n\n");
 }
@@ -301,13 +330,15 @@ void compileToASM(FILE* file, Lexeme* head){
 
     fprintf(file, "\n\n");
 
+    int ifCounter = 0;
+
 	Lexeme* child = head->firstChild;
 	while(child != NULL){
 		// Processes child iff it has a child underneath it
 		// If there is nothing underneath it, then there isn't 
 		// any code, ie it's an empty line.
 		if(child->firstChild != NULL){
-			compileFunction(file, child->firstChild, functionsMap);
+			compileFunction(file, child->firstChild, functionsMap, &ifCounter);
 		}
 
 		// Move to next child
