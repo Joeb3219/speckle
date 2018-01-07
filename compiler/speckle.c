@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 #include "speckle.h"
 #include "lexer.h"
 #include "parser.h"
@@ -95,6 +97,16 @@ int main(int argc, char** argv){
 		Token* next = head->next;
 		freeToken(head);
 		head = next;
+	}
+
+	// Now we can compile the program.
+	// TODO: allow other compilers and configs than just GCC.
+	if(fork() == 0){
+		execl("/usr/bin/gcc", "gcc", "-static", "a.s", "-o", args->outputName, NULL);
+		exit(1);
+	}else{
+		// We wait for this GCC call to finish.
+		wait(NULL);
 	}
 
 	free(args);
