@@ -49,6 +49,7 @@ void addChild(Lexeme* parent, Lexeme* child){
 	else{
 		while(lastSibling->nextSibling != NULL) lastSibling = lastSibling->nextSibling;
 		lastSibling->nextSibling = child;
+		child->prevSibling = lastSibling;
 	}
 }
 void parseIdentifier(Lexeme* head){

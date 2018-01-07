@@ -1,8 +1,20 @@
 fn main(){
 	var x = 20;
 	var      y  =      -100;
-	var z = - x z;
+	var z = - x y;
 	var j = - y x;
+
 	z = - j z;
+	printn(z);
+	newline();
+
+	printc(84);
+	printc(69);
+	printc(83);
+	printc(84);
+	newline();
+	printn(z);
+	newline();
+
 	ret 0;
 }

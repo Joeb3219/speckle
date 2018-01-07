@@ -25,6 +25,7 @@ void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int
 void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter);
 void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter);
 void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter);
+void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter);
 
 // Function implementations
 
@@ -115,10 +116,10 @@ void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
 	Lexeme* child = stmt->firstChild;
 	switch(child->type){
 		case LEX_DECLARATION:
-		compileDeclaration(file, child, variables, ifCounter);
+			compileDeclaration(file, child, variables, ifCounter);
 			break;
 		case LEX_EXPRESSION:
-		compileExpression(file, child, variables, ifCounter);
+			compileExpression(file, child, variables, ifCounter);
 			break;
 		case LEX_RETURN:
 			compileReturn(file, child, variables, ifCounter);
@@ -165,6 +166,9 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 			break;
 		case LEX_ASSIGN:
 			break;
+		case LEX_FUNCCALL:
+			compileFuncCall(file, child, variables, ifCounter);
+			break;
 		default:
 			printf("====\n");
 			printf("\nERROR\n");
@@ -183,6 +187,33 @@ void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter){
 	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");
+}
+
+void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter){
+	if(call == NULL || call->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#funccall\n");
+
+	Lexeme* identifier = findFirstLexemeOccurence(call, LEX_IDENTIFIER);
+	Lexeme* argsList = findFirstLexemeOccurence(call, LEX_ARGLIST);
+
+	Lexeme* child = argsList->firstChild;
+	Lexeme* originalChild = argsList->firstChild;
+	if(child != NULL){
+		// We first must go from the very last argument and begin pushing them from right to left.
+		while(child->nextSibling != NULL){
+			child = child->nextSibling->firstChild;
+		}
+
+		// We now have child as the very last sibling in the list.
+		// For each child, we process the expression, which stores a value into %rax, and then push %rax.
+		while(child->parent->type == LEX_ARGLIST){
+			compileExpression(file, child, variables, ifCounter);
+			fprintf(file, "\tpushq %rax\n");
+			child = child->parent->prevSibling;
+		}
+	}
+
+	fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, identifier->token->data);
 }
 
 void compileSub(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter){
