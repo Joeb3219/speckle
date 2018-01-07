@@ -24,6 +24,7 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter);
 void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter);
 void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter);
+void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter);
 
 // Function implementations
 
@@ -120,6 +121,7 @@ void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
 		compileExpression(file, child, variables, ifCounter);
 			break;
 		case LEX_RETURN:
+			compileReturn(file, child, variables, ifCounter);
 			break;
 		case LEX_IF:
 			break;
@@ -149,6 +151,7 @@ void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* 
 
 void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter){
 	if(expression == NULL || expression->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#expr_nonmath\n");
 
 	Lexeme* child = expression->firstChild;
 	switch(child->type){
@@ -167,6 +170,19 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 			printf("\nERROR\n");
 			break;
 	}
+}
+
+void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter){
+	if(ret == NULL || ret->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#return\n");
+	// First, we compile down the expression contained, which will output to %rax.
+	// We can then return directly from here.
+
+	compileExpression(file, ret->firstChild, variables, ifCounter);
+
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
 }
 
 void compileSub(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter){
@@ -239,6 +255,13 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap){
 void compileToASM(FILE* file, Lexeme* head){
 	Hashmap* functionsMap = createHashmap();
 
+	// Strings used in program execution
+	fprintf(file, "printNumFormat:\n");
+	fprintf(file, "\t.ascii \"%%d\\n\\0\"\n");
+    fprintf(file, "\t.text\n");
+
+    fprintf(file, "\n\n");
+
 	Lexeme* child = head->firstChild;
 	while(child != NULL){
 		// Processes child iff it has a child underneath it
@@ -252,10 +275,42 @@ void compileToASM(FILE* file, Lexeme* head){
 		child = child->nextSibling;
 	}
 
+	// A print function
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "print");
+    fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "print");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "print");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $16, %%rsp\n");
+
+  	fprintf(file, "\tmovq $printNumFormat, %%rdi\n");
+  	fprintf(file, "\tmovq 16(%%rbp), %%rsi\n");
+  	fprintf(file, "\tmovl $0, %%eax\n");
+  	fprintf(file, "\tcall printf\n");
+	//fprintf(file, "\tpushq -8(%%rbp)\n");
+	//fprintf(file, "\tmovq .printNumFormat(%%rip), %%rdi\n");
+	//fprintf(file, "\tpushq %%rdi\n");
+	//fprintf(file, "\tmovl $0, %%eax\n");
+	//fprintf(file, "\tcall printf\n");
+
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
+	// A main function
 	fprintf(file, ".globl main\n");
     fprintf(file, ".type main, @function\n");
 	fprintf(file, "main:\n");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $8, %%rsp\n");
 	fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "main");
+
+	fprintf(file, "\tpushq $55\n");
+	fprintf(file, "\tcall speckle_fn_print\n");
+
+	fprintf(file, "\tleave\n");
+	fprintf(file, "\tret\n");
 
 	destroyHashmap(functionsMap);
 }
