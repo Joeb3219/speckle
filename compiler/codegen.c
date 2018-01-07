@@ -53,7 +53,7 @@ int findArguments(Lexeme* function, Hashmap* hashmap){
 
 	if(argsList == NULL) return count;	// If there is no args list, we just assume an empty list.
 
-	int currentPosition = 8;
+	int currentPosition = 16;
 	
 	while(argsList != NULL && argsList->firstChild != NULL){
 		child = argsList->firstChild;
@@ -125,6 +125,7 @@ void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
 			compileReturn(file, child, variables, ifCounter);
 			break;
 		case LEX_IF:
+			compileIf(file, child, variables, ifCounter);
 			break;
 		default:
 			printf("ERROR!!\n");
@@ -274,7 +275,7 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap){
 	fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, identifier->token->data);
 	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, identifier->token->data);
 
-	fprintf(file, ".body:\n");
+	fprintf(file, ".body_fn_%s:\n", identifier->token->data);
 	fprintf(file, "\tpushq %%rbp\n");
 	fprintf(file, "\tmovq %%rsp, %%rbp\n");
 	fprintf(file, "\tsubq $%d, %%rsp\n", -nextVariableAddress);

@@ -1,6 +1,7 @@
 fn add(a, b){
-	var x = - a b;
-	ret - 0 x;
+	var nega = - 0 a;
+	var z = - nega b;
+	ret - 0 z;
 }
 
 fn mult(a, b){
