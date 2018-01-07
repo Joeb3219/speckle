@@ -23,4 +23,5 @@ fn main(){
 	var a = 8;
 	var b = 10;
 	var c = mult(a, b);
+	ret c;
 }

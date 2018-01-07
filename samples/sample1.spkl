@@ -2,6 +2,7 @@ fn main(){
 	var x = 20;
 	var      y  =      -100;
 	var z = - x z;
-	z = - - y x z;
+	var j = - y x;
+	z = - j z;
 	ret 0;
 }

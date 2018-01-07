@@ -306,6 +306,7 @@ void parseIf(Lexeme* head){
 	Lexeme* ifLex = createLexeme(LEX_IF);
 	addChild(head, ifLex);
 
+	
 	if(!isTokenType(IF)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), IF);
 	consume();
 	if(!isTokenType(PAREN_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_OPEN);
@@ -335,9 +336,9 @@ void parseSub(Lexeme* head){
 		
 	consume();
 		
-	parseExpression(sub);
+	parseExpressionNonMath(sub);
 	
-	parseExpression(sub);
+	parseExpressionNonMath(sub);
 }
 
 

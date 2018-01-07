@@ -10,13 +10,22 @@
 
 #define FUNCTION_PREPEND "speckle_fn_"
 #define INT_SIZE 8
+#define PRINT_LABELS_IN_ASM 0
 
 // Private function declarations
 void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap);
 int findArguments(Lexeme* function, Hashmap* hashmap);
 Lexeme* findFirstLexemeOccurence(Lexeme* head, LexemeType type);
-void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables);
+void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter);
+void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter);
+void compileSub(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter);
+void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter);
+void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter);
+void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter);
+void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter);
+void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter);
 
+// Function implementations
 
 Lexeme* findFirstLexemeOccurence(Lexeme* head, LexemeType type){
 	if(head == NULL) return NULL;
@@ -42,7 +51,6 @@ int findArguments(Lexeme* function, Hashmap* hashmap){
 
 	if(argsList == NULL) return count;	// If there is no args list, we just assume an empty list.
 
-	//printAST("-", argsList);
 	int currentPosition = 8;
 	
 	while(argsList != NULL && argsList->firstChild != NULL){
@@ -84,10 +92,120 @@ void findAllVariables(int* current, Lexeme* stmt, Hashmap* variables){
 	}
 }
 
-void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables){
-//	printAST("-", stmtlist);
+void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter){
+	if(stmtlist == NULL) return;
+	if(stmtlist->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#stmtlist\n");
 
-	fprintf(file, ".body:\n");
+	compileStmt(file, stmtlist->firstChild, variables, ifCounter);
+
+	if(stmtlist->firstChild->nextSibling == NULL) return;
+	compileStmtlist(file, stmtlist->firstChild->nextSibling, variables, ifCounter);
+}
+
+void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter){
+
+}
+
+void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
+	if(stmt == NULL || stmt->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#stmt\n");
+
+	Lexeme* child = stmt->firstChild;
+	switch(child->type){
+		case LEX_DECLARATION:
+		compileDeclaration(file, child, variables, ifCounter);
+			break;
+		case LEX_EXPRESSION:
+		compileExpression(file, child, variables, ifCounter);
+			break;
+		case LEX_RETURN:
+			break;
+		case LEX_IF:
+			break;
+		default:
+			printf("ERROR!!\n");
+			break;
+	}
+}
+
+void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter){
+	if(expression == NULL || expression->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#expression\n");
+
+	Lexeme* child = expression->firstChild;
+	switch(child->type){
+		case LEX_SUB:
+			compileSub(file, child, variables, ifCounter);
+			break;
+		case LEX_EXPRESSION_NONMATH:
+			compileExpressionNonMath(file, child, variables, ifCounter);
+			break;
+		default:
+			printf("ERROR!!\n");
+			break;
+	}
+}
+
+void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter){
+	if(expression == NULL || expression->firstChild == NULL) return;
+
+	Lexeme* child = expression->firstChild;
+	switch(child->type){
+		case LEX_IDENTIFIER:
+			fprintf(file, "\tmovq %d(%%rbp), %%rax\n", hashmapRead(variables, child->token->data));
+			break;
+		case LEX_NUMBER:
+			fprintf(file, "\tmovq $%d, %%rax\n", atoi(child->token->data));
+			break;
+		case LEX_LOGIC:
+			break;
+		case LEX_ASSIGN:
+			break;
+		default:
+			printf("====\n");
+			printf("\nERROR\n");
+			break;
+	}
+}
+
+void compileSub(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter){
+	if(sub == NULL || sub->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#sub\n");
+	
+	// Expression will, by default, store everything in %rax
+	// Thus, we will perform the left computation and then move %rax to %rbx.
+	compileExpressionNonMath(file, sub->firstChild, variables, ifCounter);
+	fprintf(file, "\tmovq %%rax, %%rbx\n");
+
+	// Then, we can go ahead and compute the left side, stored in %rax, and then subtract %rbx - %rax
+	compileExpressionNonMath(file, sub->firstChild->nextSibling, variables, ifCounter);
+
+	fprintf(file, "\tsubq %%rbx, %%rax\n");
+	fprintf(file, "\timulq $-1, %%rax\n");
+}
+
+void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter){
+	if(declaration == NULL || declaration->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#declaration\n");
+	compileAssign(file, declaration->firstChild, variables, ifCounter);
+}
+
+void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter){
+	if(assign == NULL || assign->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#assign\n");
+
+	Lexeme* identifier = findFirstLexemeOccurence(assign, LEX_IDENTIFIER);
+	Lexeme* expression = findFirstLexemeOccurence(assign, LEX_EXPRESSION);
+
+	// First, we must generate the expression code needed to create the result.
+	// We will then store this in the register %rax
+
+	compileExpression(file, expression, variables, ifCounter);
+
+	int variableOffset = hashmapRead(variables, identifier->token->data);
+
+	fprintf(file, "\tmovq %%rax, %d(%rbp)\n", variableOffset);
 }
 
 void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap){
@@ -97,16 +215,23 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap){
 
 	int argCount = findArguments(function, variableMap);
 	int nextVariableAddress = -8;
+	int intMarker = 0;
 
 	Lexeme* identifier = findFirstLexemeOccurence(function, LEX_IDENTIFIER);
 	Lexeme* stmtlist = findFirstLexemeOccurence(function, LEX_STMTLIST);
 	findAllVariables(&nextVariableAddress, stmtlist, variableMap);
 
-	printf("next variable address value: %d\n", nextVariableAddress);
 	fprintf(file, "# Function: %s%s (%d args)\n", FUNCTION_PREPEND, identifier->token->data, argCount);
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, identifier->token->data);
+	fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, identifier->token->data);
 	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, identifier->token->data);
 
-	compileStmtlist(file, stmtlist, variableMap);
+	fprintf(file, ".body:\n");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $%d, %%rsp\n", -nextVariableAddress);
+
+	compileStmtlist(file, stmtlist, variableMap, &intMarker);
 
 	fprintf(file, "\n\n");
 }
@@ -126,6 +251,11 @@ void compileToASM(FILE* file, Lexeme* head){
 		// Move to next child
 		child = child->nextSibling;
 	}
+
+	fprintf(file, ".globl main\n");
+    fprintf(file, ".type main, @function\n");
+	fprintf(file, "main:\n");
+	fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "main");
 
 	destroyHashmap(functionsMap);
 }

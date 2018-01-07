@@ -85,7 +85,7 @@ int main(int argc, char** argv){
 
 	Lexeme* lexemes = parse(args, head);
 
-	FILE* output = fopen("a.asm", "w");
+	FILE* output = fopen("a.s", "w");
 	compileToASM(output, lexemes);
 	fclose(output);
 
