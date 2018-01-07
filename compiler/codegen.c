@@ -165,6 +165,7 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 		case LEX_LOGIC:
 			break;
 		case LEX_ASSIGN:
+			compileAssign(file, child, variables, ifCounter);
 			break;
 		case LEX_FUNCCALL:
 			compileFuncCall(file, child, variables, ifCounter);
