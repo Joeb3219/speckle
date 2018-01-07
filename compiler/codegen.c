@@ -26,6 +26,7 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter);
 void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter);
 void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter);
+void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter);
 
 // Function implementations
 
@@ -194,6 +195,7 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 			fprintf(file, "\tmovq $%d, %%rax\n", atoi(child->token->data));
 			break;
 		case LEX_LOGIC:
+			compileLogic(file, child, variables, ifCounter);
 			break;
 		case LEX_ASSIGN:
 			compileAssign(file, child, variables, ifCounter);
@@ -219,6 +221,13 @@ void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter){
 	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");
+}
+
+void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter){
+	if(logic == NULL || logic->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#logic\n");
+
+	printAST("--", logic);
 }
 
 void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter){
