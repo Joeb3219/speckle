@@ -10,15 +10,24 @@ fn main(){
 	var z = add(x, y);
 
 	printn(x);
-	newline();
+	printc(43);
 	printn(y);
-	newline();
+	printc(61);
 	printn(z);
 	newline();
 
-	if ( 0 ){
+	if ( 1 ){
 		printc(69);
 		newline();
+		if ( 0 ){
+			printc(70);
+			newline();
+		};
+
+		if( 1 ){
+			printc(68);
+			newline();
+		};
 	};
 
 	ret 0;
