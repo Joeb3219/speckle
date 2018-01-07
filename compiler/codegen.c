@@ -257,7 +257,13 @@ void compileToASM(FILE* file, Lexeme* head){
 
 	// Strings used in program execution
 	fprintf(file, "printNumFormat:\n");
-	fprintf(file, "\t.ascii \"%%d\\n\\0\"\n");
+	fprintf(file, "\t.ascii \"%%d\\0\"\n");
+    fprintf(file, "\t.text\n");
+    fprintf(file, "newLineFormat:\n");
+	fprintf(file, "\t.ascii \"\\n\\0\"\n");
+    fprintf(file, "\t.text\n");
+    fprintf(file, "printCharFormat:\n");
+	fprintf(file, "\t.ascii \"%%c\\0\"\n");
     fprintf(file, "\t.text\n");
 
     fprintf(file, "\n\n");
@@ -275,24 +281,46 @@ void compileToASM(FILE* file, Lexeme* head){
 		child = child->nextSibling;
 	}
 
-	// A print function
-	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "print");
-    fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "print");
-	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "print");
+	// A print function for printing a number
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "printn");
+    fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "printn");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "printn");
 	fprintf(file, "\tpushq %%rbp\n");
 	fprintf(file, "\tmovq %%rsp, %%rbp\n");
 	fprintf(file, "\tsubq $16, %%rsp\n");
-
   	fprintf(file, "\tmovq $printNumFormat, %%rdi\n");
   	fprintf(file, "\tmovq 16(%%rbp), %%rsi\n");
   	fprintf(file, "\tmovl $0, %%eax\n");
   	fprintf(file, "\tcall printf\n");
-	//fprintf(file, "\tpushq -8(%%rbp)\n");
-	//fprintf(file, "\tmovq .printNumFormat(%%rip), %%rdi\n");
-	//fprintf(file, "\tpushq %%rdi\n");
-	//fprintf(file, "\tmovl $0, %%eax\n");
-	//fprintf(file, "\tcall printf\n");
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
 
+	// A print function for printing a character
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "printc");
+    fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "printc");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "printc");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $16, %%rsp\n");
+  	fprintf(file, "\tmovq $printCharFormat, %%rdi\n");
+  	fprintf(file, "\tmovq 16(%%rbp), %%rsi\n");
+  	fprintf(file, "\tmovl $0, %%eax\n");
+  	fprintf(file, "\tcall printf\n");
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
+	// A print function for printing a newline
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "newline");
+    fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "newline");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "newline");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $8, %%rsp\n");
+  	fprintf(file, "\tmovq $newLineFormat, %%rdi\n");
+  	fprintf(file, "\tmovl $0, %%eax\n");
+  	fprintf(file, "\tcall printf\n");
 	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");
@@ -305,9 +333,6 @@ void compileToASM(FILE* file, Lexeme* head){
 	fprintf(file, "\tmovq %%rsp, %%rbp\n");
 	fprintf(file, "\tsubq $8, %%rsp\n");
 	fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "main");
-
-	fprintf(file, "\tpushq $55\n");
-	fprintf(file, "\tcall speckle_fn_print\n");
 
 	fprintf(file, "\tleave\n");
 	fprintf(file, "\tret\n");
