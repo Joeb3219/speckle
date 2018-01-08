@@ -6,23 +6,43 @@ fn add(a, b){
 
 fn mult(a, b){
 	var x = 0;
+	var y = 0;
+	var z = 0;
+	var w = 0;
 
-	if( <= b 0 ){
+	if(== a 0){
 		ret 0;
 	};
 
-	if( == b 1 ){
-		ret a;
+	if(== b 0){
+		ret 0;
 	};
 
-	x = - b 1;
-	var intermediate = mult(a, x);
-	ret add(intermediate, a);
+	if(<= 0 8){
+		x = - b 1;
+		y = mult(a, x);
+		ret add(a, y);
+	};
+
+	x = add(b, 1);
+	y = mult(a, x);
+	w = - 0 a;
+	ret add(w, y);
+
 }
 
 fn main(){
 	var a = 8;
 	var b = 10;
 	var c = mult(a, b);
-	ret c;
+
+	printn(a);
+	printc(42);
+	printn(b);
+	printc(61);
+	printn(c);
+	newline();
+
+
+	ret 0;
 }

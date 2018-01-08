@@ -246,7 +246,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
-			fprintf(file, "\tcmpq %%rcx, %%rdx\n");
+			fprintf(file, "\tcmpq %%rdx, %%rcx\n");
 			fprintf(file, "\tsetle %%al\n");
 			fprintf(file, "\tmovzbq %%al, %%rax\n");
 			break;
