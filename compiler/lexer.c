@@ -258,7 +258,9 @@ Token* tokenize(Arguments* args, FILE* file){
 		current->data[i++] = '\0';
 		identifyToken(current, file);
 	}else{
+		Token* old = current;
 		if(current != NULL && current->prev != NULL) current = current->prev;
+		freeToken(old);
 	}
 	
 	if(current->type != END){

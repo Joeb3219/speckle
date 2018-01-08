@@ -403,6 +403,8 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *i
 	compileStmtlist(file, stmtlist, variableMap, ifCounter);
 
 	fprintf(file, "\n\n");
+
+	destroyHashmap(variableMap);
 }
 
 void compileToASM(FILE* file, Lexeme* head){
