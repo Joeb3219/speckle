@@ -279,7 +279,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 
 			// Now we evaluate the leq status, and then store it into %rax
 			fprintf(file, "\tandq %%rcx, %%rdx\n");
-			fprintf(file, "\tmovq %%rcx, %%rax\n");
+			fprintf(file, "\tmovq %%rdx, %%rax\n");
 			break;
 		case LEX_OR:
 			left = child->firstChild;
@@ -294,7 +294,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 
 			// Now we evaluate the leq status, and then store it into %rax
 			fprintf(file, "\torq %%rcx, %%rdx\n");
-			fprintf(file, "\tmovq %%rcx, %%rax\n");
+			fprintf(file, "\tmovq %%rdx, %%rax\n");
 			break;
 		case LEX_NOT:
 			left = child->firstChild;
