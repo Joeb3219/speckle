@@ -218,54 +218,54 @@ void parseLogic(Lexeme* head){
 }
 
 void parseLeq(Lexeme* head){
-	Lexeme* leq = createLexeme(LEX_LEQ);
-	addChild(head, leq);
-
 	if(isTokenType(LEQ)){
+		Lexeme* leq = createLexeme(LEX_LEQ);
+		addChild(head, leq);
+
 		consume();
 		parseExpression(leq);
 		parseEquals(leq);
 	}else{
-		parseEquals(leq);
+		parseEquals(head);
 	}
 }
 
 void parseEquals(Lexeme* head){
-	Lexeme* equals = createLexeme(LEX_EQUALS);
-	addChild(head, equals);
-
 	if(isTokenType(EQUALS_EQUALS)){
+		Lexeme* equals = createLexeme(LEX_EQUALS);
+		addChild(head, equals);
+
 		consume();
 		parseExpression(equals);
 		parseOr(equals);
 	}else{
-		parseOr(equals);
+		parseOr(head);
 	}
 }
 
 void parseOr(Lexeme* head){
-	Lexeme* or = createLexeme(LEX_OR);
-	addChild(head, or);
-
 	if(isTokenType(OR)){
+		Lexeme* or = createLexeme(LEX_OR);
+		addChild(head, or);
+
 		consume();
 		parseExpression(or);
 		parseAnd(or);
 	}else{
-		parseAnd(or);
+		parseAnd(head);
 	}
 }
 
 void parseAnd(Lexeme* head){
-	Lexeme* and = createLexeme(LEX_AND);
-	addChild(head, and);
-
 	if(isTokenType(AND)){
+		Lexeme* and = createLexeme(LEX_AND);
+		addChild(head, and);
+	
 		consume();
 		parseExpression(and);
 		parseNot(and);
 	}else{
-		parseNot(and);
+		parseNot(head);
 	}
 }
 

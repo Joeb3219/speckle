@@ -30,5 +30,10 @@ fn main(){
 		};
 	};
 
+	if ( <= z 18 ){
+		printc(60);
+		newline();
+	};
+
 	ret 0;
 }

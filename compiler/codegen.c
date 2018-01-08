@@ -176,6 +176,9 @@ void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* 
 		case LEX_EXPRESSION_NONMATH:
 			compileExpressionNonMath(file, child, variables, ifCounter);
 			break;
+		case LEX_EXPRESSION:
+			compileExpression(file, child, variables, ifCounter);
+			break;
 		default:
 			printf("ERROR!!\n");
 			break;
@@ -226,8 +229,86 @@ void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter){
 void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter){
 	if(logic == NULL || logic->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#logic\n");
+	
+	Lexeme* child = logic->firstChild;
+	Lexeme *left, *right;
 
-	printAST("--", logic);
+	switch(child->type){
+		case LEX_LEQ:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileExpression(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileExpression(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tcmpq %%rcx, %%rdx\n");
+			fprintf(file, "\tsetle %%al\n");
+			fprintf(file, "\tmovzbq %%al, %%rax\n");
+			break;
+		case LEX_EQUALS:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileExpression(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileExpression(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tcmpq %%rcx, %%rdx\n");
+			fprintf(file, "\tsetz %%al\n");
+			fprintf(file, "\tmovzbq %%al, %%rax\n");
+			break;
+		case LEX_AND:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileExpression(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileExpression(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tandq %%rcx, %%rdx\n");
+			fprintf(file, "\tmovq %%rcx, %%rax\n");
+			break;
+		case LEX_OR:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileExpression(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileExpression(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\torq %%rcx, %%rdx\n");
+			fprintf(file, "\tmovq %%rcx, %%rax\n");
+			break;
+		case LEX_NOT:
+			left = child->firstChild;
+			
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileExpression(file, left, variables, ifCounter);
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tnotq %%rax\n");
+			break;
+		default:
+			printf("ERROR!!!!\n");
+			break;
+	}
 }
 
 void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter){
