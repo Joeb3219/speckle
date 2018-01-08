@@ -186,12 +186,13 @@ void printTokens(FILE* output, Token* head){
 // token until we read a full buffer or whitespace.
 // Next, we go pass the read string through from the end and narrow down until we have a token of a valid size.
 Token* tokenize(Arguments* args, FILE* file){
-	char c;
+	char c, j;
 	int prevWasSpace = 0;
 	int i = 0;
 	int colNo = -1, lineNo = 0;
 	Token* current = createToken();
 	Token* head = current;
+
 
 	while( (c = fgetc(file)) != EOF){
 		colNo ++;
@@ -207,6 +208,13 @@ Token* tokenize(Arguments* args, FILE* file){
 		if(i == 31 || c == ' ' || c == '\t' || c == '\n'){
 			prevWasSpace = 1;
 			if(i == 0){
+				if(c == '\n'){
+					j = fgetc(file);
+					ungetc(j, file);
+					if(j == '\n'){
+						lineNo ++;
+					}
+				}
 				continue;
 			}
 
