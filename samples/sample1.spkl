@@ -8,10 +8,10 @@ fn main(){
 	printn(z);
 	newline();
 
-	printc(84);
-	printc(69);
-	printc(83);
-	printc(84);
+	printc('T');
+	printc('E');
+	printc('S');
+	printc('T');
 	newline();
 	printn(z);
 	newline();

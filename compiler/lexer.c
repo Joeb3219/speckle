@@ -51,7 +51,8 @@ void identifyToken(Token* token, FILE* file){
 
 
 	if( type == -1 && strlen(token->data) == 3 ){
-		if(strcmp("ret", token->data) == 0) type = RET;
+		if(token->data[0] == '\'' && token->data[2] == '\'') type = CHARACTER_TEMPORARY;
+		else if(strcmp("ret", token->data) == 0) type = RET;
 		else if(strcmp("var", token->data) == 0) type = VAR;
 		else if(isNumber(token)) type = NUMBER;
 		else if(isIdentifier(token)) type = IDENTIFIER;
@@ -221,6 +222,14 @@ Token* tokenize(Arguments* args, FILE* file){
 			current->data[i++] = '\0';
 			identifyToken(current, file);
 			colNo -= (i - strlen(current->data));
+
+			if(current->type == CHARACTER_TEMPORARY){
+				current->type = NUMBER;
+				char* newString = malloc(sizeof(char) * 8);
+				sprintf(newString, "%d", (int) current->data[1]);
+				free(current->data);
+				current->data = newString;
+			}
 
 			// identifyToken may move back the file pointer.
 			// If it did, and we are no longer at a new line, we don't have to increment the lineNo anymore.

@@ -37,9 +37,9 @@ fn main(){
 	var c = mult(a, b);
 
 	printn(a);
-	printc(42);
+	printc('*');
 	printn(b);
-	printc(61);
+	printc('=');
 	printn(c);
 	newline();
 

@@ -10,9 +10,9 @@ fn main(){
 	var z = add(x, y);
 
 	printn(x);
-	printc(43);
+	printc('+');
 	printn(y);
-	printc(61);
+	printc('=');
 	printn(z);
 	newline();
 
