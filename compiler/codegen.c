@@ -302,8 +302,9 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
 			compileExpression(file, left, variables, ifCounter);
 
-			// Now we evaluate the leq status, and then store it into %rax
-			fprintf(file, "\tnotq %%rax\n");
+			fprintf(file, "test %%rax, %%rax\n");
+			fprintf(file, "\tsetz %%al\n");
+			fprintf(file, "\tmovzbq %%al, %%rax\n");
 			break;
 		default:
 			printf("ERROR!!!!\n");
