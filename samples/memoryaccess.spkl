@@ -25,5 +25,13 @@ fn main(){
 
 	};
 
+	var arr2 = {2};
+	arr2{0} = {8};
+	arr2{1} = {4};
+
+	printn(len(arr2)); newline();
+	printn(len(arr2{0})); newline();
+	printn(len(arr2{1})); newline();
+
 	ret 0;
 }
