@@ -18,6 +18,7 @@ int findArguments(Lexeme* function, Hashmap* hashmap);
 Lexeme* findFirstLexemeOccurence(Lexeme* head, LexemeType type);
 void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter);
 void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter);
+void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCounter);
 void compileMath(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter);
 void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter);
 void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter);
@@ -140,6 +141,43 @@ void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter){
 
 }
 
+void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCounter){
+	if(whileNode == NULL || whileNode->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#while\n");
+
+	// We generate two bodies: one for the jump, and one for not if the condition fails.
+
+	Lexeme* expression = findFirstLexemeOccurence(whileNode, LEX_EXPRESSION);
+	Lexeme* stmtlist = findFirstLexemeOccurence(whileNode, LEX_STMTLIST);
+
+	int currentIfCount = *ifCounter;
+	(*ifCounter) = currentIfCount + 1;
+
+	// First, we leave the top of the loop structure.
+	// This will be the boundary point we go to at the start of each iteration.
+	fprintf(file, ".while_branch_%d_test:\n", currentIfCount);
+
+	// Next, we compile the expression.
+	// This will store some value in %rax
+	// If this value is not equal to 1, we will continue.
+	// If this value is ANYTHING OTHER THAN 1, we will skip past the statementlist body.
+	compileExpression(file, expression, variables, ifCounter);
+
+	fprintf(file, "\tcmpq $1, %%rax\n");
+	fprintf(file, "\tjne .while_branch_%d_finish\n", currentIfCount);
+
+	// If we didn't jump, then we are meant to execute the code.
+	// Now we can compile the statementlist
+	compileStmtlist(file, stmtlist, variables, ifCounter);
+
+	// Now that we're done all of this, we jump back to the top of the while loop and see where we are at.
+	fprintf(file, "\tjmp .while_branch_%d_test\n", currentIfCount);
+
+	// Now we can compile the failure jump point
+	fprintf(file, ".while_branch_%d_finish:\n", currentIfCount);
+
+}
+
 void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
 	if(stmt == NULL || stmt->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#stmt\n");
@@ -157,6 +195,9 @@ void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
 			break;
 		case LEX_IF:
 			compileIf(file, child, variables, ifCounter);
+			break;
+		case LEX_WHILE:
+			compileWhile(file, child, variables, ifCounter);
 			break;
 		default:
 			printf("ERROR!!\n");
