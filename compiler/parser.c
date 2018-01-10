@@ -24,7 +24,6 @@ void parseAssign(Lexeme* head);
 void parseFunc(Lexeme* head);
 void parseReturn(Lexeme* head);
 void parseFuncCall(Lexeme* head);
-void parseExpressionNonMath(Lexeme* head);
 void parseExpression(Lexeme* head);
 void parseLogic(Lexeme* head);
 void parseLeq(Lexeme* head);
@@ -35,7 +34,12 @@ void parseNot(Lexeme* head);
 void parseArgList(Lexeme* head);
 void parseParamList(Lexeme* head);
 void parseIf(Lexeme* head);
+void parseIdentOrNumber(Lexeme* head);
+void parseMath(Lexeme* head);
 void parseSub(Lexeme* head);
+void parseMult(Lexeme* head);
+void parseDiv(Lexeme* head);
+void parseAdd(Lexeme* head);
 	
 
 Token** current = NULL;
@@ -173,100 +177,81 @@ void parseFuncCall(Lexeme* head){
 	consume();
 }
 
-//expressionNonMath := ( <expression> ) | <assign> | <funcCall> | identifier | <logic>
-void parseExpressionNonMath(Lexeme* head){
-
-	Lexeme* expression = createLexeme(LEX_EXPRESSION_NONMATH);
-	addChild(head, expression);
-
-	if(isTokenType(PAREN_OPEN)){
-		consume();
-		parseExpression(expression);
-		if(!isTokenType(PAREN_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), PAREN_CLOSE);
-		consume();
-	}else if(isPeekType(EQUALS)){
-		parseAssign(expression);
-	}else if(isPeekType(PAREN_OPEN)){
-		parseFuncCall(expression);
-	}else if(isTokenType(AND) || isTokenType(OR) || isTokenType(NOT) || isTokenType(EQUALS_EQUALS) || isTokenType(LEQ)){
-		parseLogic(expression);
-	}else if(isTokenType(IDENTIFIER)) parseIdentifier(expression);
-	else if(isTokenType(NUMBER)) parseNumber(expression);
-}
-
-//<expression>	:= <expressionNonMath> | <sub>
 void parseExpression(Lexeme* head){
 	Lexeme* expression = createLexeme(LEX_EXPRESSION);
 	addChild(head, expression);
 
 
-	if(isTokenType(MINUS)) parseSub(expression);
-	else parseExpressionNonMath(expression);
+	if(isPeekType(MINUS) || isPeekType(PLUS) || isPeekType(TIMES) || isPeekType(DIV)) parseMath(expression);
+	else if(isPeekType(LEQ) || isPeekType(AND) || isPeekType(OR) || isTokenType(NOT) || isPeekType(EQUALS_EQUALS)) parseLogic(expression);
+	else if(isPeekType(PAREN_OPEN)) parseFuncCall(expression);
+	else if(isPeekType(EQUALS)) parseAssign(expression);
+	else parseIdentOrNumber(expression);
 }
 
-// <logic>			:= <leq>
-// <leq>			:= <= <expression> <equals> | <equals>
-// <equals>		:= == <expresion> <or> | <or>
-// <or>			:= | <expression> <and> | <and>
-// <and>			:= & <expression> <not> | <not>
-// <not>			:= ! <expression>
+
+void parseIdentOrNumber(Lexeme* head){
+	if(isTokenType(IDENTIFIER)) parseIdentifier(head);
+	else if(isTokenType(NUMBER)) parseNumber(head);
+}
+
 void parseLogic(Lexeme* head){
 	Lexeme* logic = createLexeme(LEX_LOGIC);
 	addChild(head, logic);
 
-	parseLeq(logic);
+	if(isPeekType(LEQ)) parseLeq(logic);
+	else if(isPeekType(OR)) parseOr(logic);
+	else if(isPeekType(AND)) parseAnd(logic);
+	else if(isPeekType(EQUALS_EQUALS)) parseEquals(logic);
+	else if(isTokenType(NOT)) parseNot(logic);
 }
 
 void parseLeq(Lexeme* head){
-	if(isTokenType(LEQ)){
-		Lexeme* leq = createLexeme(LEX_LEQ);
-		addChild(head, leq);
+	Lexeme* leq = createLexeme(LEX_LEQ);
+	addChild(head, leq);
 
-		consume();
-		parseExpression(leq);
-		parseEquals(leq);
-	}else{
-		parseEquals(head);
-	}
+	parseIdentOrNumber(leq);
+
+	if(!isTokenType(LEQ)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), LEQ);
+	consume();
+
+	parseIdentOrNumber(leq);
 }
 
 void parseEquals(Lexeme* head){
-	if(isTokenType(EQUALS_EQUALS)){
-		Lexeme* equals = createLexeme(LEX_EQUALS);
-		addChild(head, equals);
+	Lexeme* equals = createLexeme(LEX_EQUALS);
+	addChild(head, equals);
 
-		consume();
-		parseExpression(equals);
-		parseOr(equals);
-	}else{
-		parseOr(head);
-	}
+	parseIdentOrNumber(equals);
+
+	if(!isTokenType(EQUALS_EQUALS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), EQUALS_EQUALS);
+	consume();
+
+	parseIdentOrNumber(equals);
 }
 
 void parseOr(Lexeme* head){
-	if(isTokenType(OR)){
-		Lexeme* or = createLexeme(LEX_OR);
-		addChild(head, or);
+	Lexeme* or = createLexeme(LEX_OR);
+	addChild(head, or);
 
-		consume();
-		parseExpression(or);
-		parseAnd(or);
-	}else{
-		parseAnd(head);
-	}
+	parseIdentOrNumber(or);
+
+	if(!isTokenType(OR)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), OR);
+	consume();
+
+	parseIdentOrNumber(or);
 }
 
 void parseAnd(Lexeme* head){
-	if(isTokenType(AND)){
-		Lexeme* and = createLexeme(LEX_AND);
-		addChild(head, and);
+	Lexeme* and = createLexeme(LEX_AND);
+	addChild(head, and);
 	
-		consume();
-		parseExpression(and);
-		parseNot(and);
-	}else{
-		parseNot(head);
-	}
+	parseIdentOrNumber(and);
+
+	if(!isTokenType(AND)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), AND);
+	consume();
+
+	parseIdentOrNumber(and);
 }
 
 void parseNot(Lexeme* head){
@@ -274,7 +259,8 @@ void parseNot(Lexeme* head){
 	addChild(head, not);
 
 	if(isTokenType(NOT)) consume(); 
-	parseExpression(not);
+
+	parseIdentOrNumber(not);
 }
 
 void parseArgList(Lexeme* head){
@@ -327,21 +313,71 @@ void parseIf(Lexeme* head){
 	consume();
 }
 
-//<sub>			:= <expressionNonMath> - <expression>
-//<sub>			:= -<expression>
+void parseMath(Lexeme* head){
+	Lexeme* math = createLexeme(LEX_MATH);
+	addChild(head, math);
+
+	if(isPeekType(MINUS)) parseSub(math);
+	else if(isPeekType(PLUS)) parseAdd(math);
+	else if(isPeekType(TIMES)) parseMult(math);
+	else if(isPeekType(DIV)) parseDiv(math);
+}
+
+
 void parseSub(Lexeme* head){
 	Lexeme* sub = createLexeme(LEX_SUB);
 	addChild(head, sub);
 
-	if(!isTokenType(MINUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), MINUS);
+	if(!isPeekType(MINUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(peek(), MINUS);
 		
+	parseIdentOrNumber(sub);
+
 	consume();
-		
-	parseExpressionNonMath(sub);
 	
-	parseExpressionNonMath(sub);
+	parseIdentOrNumber(sub);
 }
 
+
+void parseAdd(Lexeme* head){
+	Lexeme* add = createLexeme(LEX_ADD);
+	addChild(head, add);
+
+	if(!isPeekType(PLUS)) ERR_UNEXPECTED_TOKEN_EXPECTED(peek(), PLUS);
+		
+	parseIdentOrNumber(add);
+
+	consume();
+	
+	parseIdentOrNumber(add);
+}
+
+
+void parseMult(Lexeme* head){
+	Lexeme* mult = createLexeme(LEX_MULT);
+	addChild(head, mult);
+
+	if(!isPeekType(TIMES)) ERR_UNEXPECTED_TOKEN_EXPECTED(peek(), TIMES);
+		
+	parseIdentOrNumber(mult);
+
+	consume();
+	
+	parseIdentOrNumber(mult);
+}
+
+
+void parseDiv(Lexeme* head){
+	Lexeme* div = createLexeme(LEX_DIV);
+	addChild(head, div);
+
+	if(!isPeekType(DIV)) ERR_UNEXPECTED_TOKEN_EXPECTED(peek(), DIV);
+		
+	parseIdentOrNumber(div);
+
+	consume();
+	
+	parseIdentOrNumber(div);
+}
 
 void parseProgram(Lexeme* head){
 	if(isTokenType(END)) ERR_UNEXPECTED_EOF(currentToken());
@@ -423,7 +459,11 @@ char* lexemeTypeToChar(LexemeType type){
 		case LEX_SUB: return "SUB";
 		case LEX_IDENTIFIER: return "IDENTIFIER";
 		case LEX_NUMBER: return "NUMBER";
-		case LEX_EXPRESSION_NONMATH: return "EXPRESSION_NONMATH";
+		case LEX_MATH: return "MATH";
+		case LEX_ADD: return "ADD";
+		case LEX_MULT: return "MULT";
+		case LEX_DIV: return "DIV";
+		case LEX_IDENTORNUMBER: return "IDENT_OR_NUMBER";
 		case LEX_FUNCTIONS: return "FUNCTIONS";
 		default: return "ERROR";
 	}

@@ -18,19 +18,23 @@ character: '[ANY ONE CHARACTER]' => breaks down into a number
 
 <func>			:= fn identifier ( <arglist> ) { <stmtlist> }
 <funcCall>		:= identifier ( <paramlist> )
-<expression>	:= <sub> | <expressionNonMath>
-<expressionNonMath> := ( <expression> ) | <assign> | <funcCall> | identifier | <logic>
+<expression>	:= <math> | <logic> | <identOrNumber> | <funcCall>
+<identOrNumber> := identifier | number
 
-<logic>			:= <leq>
-<leq>			:= <= <expression> <equals> | <equals>
-<equals>		:= == <expresion> <or> | <or>
-<or>			:= | <expression> <and> | <and>
-<and>			:= & <expression> <not> | <not>
-<not>			:= ! <expression> | <expression>
+<logic>			:= <leq> | <equals> | <or> | <and> | <not>
+<leq>			:= <identOrNumber> <= <identOrNumber>
+<equals>		:= <identOrNumber> == <identOrNumber>
+<or>			:= <identOrNumber> | <identOrNumber>
+<and>			:= <identOrNumber> & <identOrNumber>
+<not>			:= ! <identOrNumber>
 
 <arglist>		:= identifier , <arglist> | identifier | epsilon
-<paramlist>		:= <expression> , <paramlist> | <expression> | epsilon
+<paramlist>		:= <identOrNumber> , <paramlist> | <identOrNumber> | epsilon
 
 <if>			:= if ( <expression> ) { <stmtlist> }
 
-<sub>			:= - <expression> <sub> | <expression>
+<math>			:= <sub> | <add> | <mult> | <div>
+<sub>			:= <identOrNumber> - <identOrNumber>
+<add>			:= <identOrNumber> + <identOrNumber>
+<mult>			:= <identOrNumber> * <identOrNumber>
+<div>			:= <identOrNumber> / <identOrNumber>

@@ -1,10 +1,23 @@
 fn main(){
 	var x = 20;
 	var      y  =      -100;
-	var z = - x y;
-	var j = - y x;
+	var z = x - y;
+	var j = y - x;
 
-	z = - j z;
+	var a = 1;
+	var b = a * 2;
+	var c = b / 2;
+	var d = c + 10;
+	var e = d - 50;
+	var f = e / -3;
+
+	printn(e);
+	newline();
+	printn(f);
+	newline();
+	newline();
+
+	z = j - z;
 	printn(z);
 	newline();
 
@@ -14,6 +27,20 @@ fn main(){
 	printc('T');
 	newline();
 	printn(z);
+	newline();
+	newline();
+
+	var q = 5 <= 10;
+	var r = 6 == 7;
+	var s = q & r;
+	var t = ! s;
+	printn(q);
+	newline();
+	printn(r);
+	newline();
+	printn(s);
+	newline();
+	printn(t);
 	newline();
 
 	ret 0;

@@ -18,15 +18,15 @@ int findArguments(Lexeme* function, Hashmap* hashmap);
 Lexeme* findFirstLexemeOccurence(Lexeme* head, LexemeType type);
 void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter);
 void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter);
-void compileSub(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter);
+void compileMath(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter);
 void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter);
-void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter);
 void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter);
 void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter);
 void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter);
 void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter);
 void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter);
 void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter);
+void compileIdentifierOrNumber(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter);
 
 // Function implementations
 
@@ -170,11 +170,21 @@ void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* 
 
 	Lexeme* child = expression->firstChild;
 	switch(child->type){
-		case LEX_SUB:
-			compileSub(file, child, variables, ifCounter);
+		case LEX_MATH:
+			compileMath(file, child, variables, ifCounter);
 			break;
-		case LEX_EXPRESSION_NONMATH:
-			compileExpressionNonMath(file, child, variables, ifCounter);
+		case LEX_LOGIC:
+			compileLogic(file, child, variables, ifCounter);
+			break;
+		case LEX_FUNCCALL:
+			compileFuncCall(file, child, variables, ifCounter);
+			break;
+		case LEX_IDENTIFIER:
+		case LEX_NUMBER:
+			compileIdentifierOrNumber(file, child, variables, ifCounter);
+			break;
+		case LEX_ASSIGN:
+			compileAssign(file, child, variables, ifCounter);
 			break;
 		case LEX_EXPRESSION:
 			compileExpression(file, child, variables, ifCounter);
@@ -239,10 +249,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileExpression(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileExpression(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -255,10 +265,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileExpression(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileExpression(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -271,10 +281,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileExpression(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileExpression(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -286,10 +296,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileExpression(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileExpression(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -300,7 +310,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			left = child->firstChild;
 			
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileExpression(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
 
 			fprintf(file, "test %%rax, %%rax\n");
 			fprintf(file, "\tsetz %%al\n");
@@ -339,20 +349,60 @@ void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounte
 	fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, identifier->token->data);
 }
 
-void compileSub(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter){
-	if(sub == NULL || sub->firstChild == NULL) return;
-	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#sub\n");
+void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int* ifCounter){
+	if(node == NULL) return;
+
+	switch(node->type){
+		case LEX_IDENTIFIER:
+			fprintf(file, "\tmovq %d(%%rbp), %%rax\n", hashmapRead(variables, node->token->data));
+			break;
+		case LEX_NUMBER:
+			fprintf(file, "\tmovq $%d, %%rax\n", atoi(node->token->data));
+			break;
+		default:
+			printf("ERROR!!!!!!\n");
+			break;
+	}
+}
+
+void compileMath(FILE* file, Lexeme* math, Hashmap* variables, int* ifCounter){
+	if(math == NULL || math->firstChild == NULL) return;
+	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#math\n");
 	
 	// Expression will, by default, store everything in %rax
 	// Thus, we will perform the left computation and then move %rax to %rbx.
-	compileExpressionNonMath(file, sub->firstChild, variables, ifCounter);
+	compileIdentifierOrNumber(file, math->firstChild->firstChild, variables, ifCounter);
 	fprintf(file, "\tmovq %%rax, %%rbx\n");
 
 	// Then, we can go ahead and compute the left side, stored in %rax, and then subtract %rbx - %rax
-	compileExpressionNonMath(file, sub->firstChild->nextSibling, variables, ifCounter);
+	compileIdentifierOrNumber(file, math->firstChild->firstChild->nextSibling, variables, ifCounter);
 
-	fprintf(file, "\tsubq %%rbx, %%rax\n");
-	fprintf(file, "\timulq $-1, %%rax\n");
+	// We now will have a in %rbx, and b in %rax
+	// We will perform whatever computation is needed and store it in %rbx
+	switch(math->firstChild->type){
+		case LEX_SUB:
+			fprintf(file, "\tsubq %%rax, %%rbx\n");
+			fprintf(file, "\tmovq %%rbx, %%rax\n");
+			break;
+		case LEX_ADD:
+			fprintf(file, "\taddq %%rbx, %%rax\n");
+			break;
+		case LEX_MULT:
+			fprintf(file, "\timulq %%rbx, %%rax\n");
+			break;
+		case LEX_DIV:
+			// The assembly divide instruction takes the given register, divides %rax by it, and then places the result
+			// into %rax
+			// Thus, we have to do some movement to make this do the correct computation.
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			fprintf(file, "\tmovq %%rbx, %%rax\n");
+			fprintf(file, "\tcqto\n");
+			fprintf(file, "\tidivq %%rcx\n");
+			break;
+		default:
+			printf("Uh oh, unknown math\n");
+			break;
+	}
 }
 
 void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter){
@@ -464,6 +514,21 @@ void compileToASM(FILE* file, Lexeme* head){
   	fprintf(file, "\tmovq 16(%%rbp), %%rsi\n");
   	fprintf(file, "\tmovl $0, %%eax\n");
   	fprintf(file, "\tcall printf\n");
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
+	// A function to read one byte in from the stdin.
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "read");
+    fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "read");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "read");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $8, %%rsp\n");
+  	fprintf(file, "\tmovq stdin(%rip), %rax\n");
+  	fprintf(file, "\tmovq %rax, %%rdi\n");
+  	fprintf(file, "\tmovq $0, %rax\n");
+  	fprintf(file, "\tcall getchar\n");
 	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");

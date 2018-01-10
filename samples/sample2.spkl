@@ -1,13 +1,7 @@
-fn add(a, b){
-	var nega = - 0 a;
-	var z = - nega b;
-	ret - 0 z;
-}
-
 fn main(){
 	var x = 8;
 	var y = 10;
-	var z = add(x, y);
+	var z = x + y;
 
 	printn(x);
 	printc('+');
@@ -30,7 +24,7 @@ fn main(){
 		};
 	};
 
-	if ( <= z 19 ){
+	if ( z <= 18 ){
 		printc(60);
 		newline();
 	};
