@@ -299,6 +299,54 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			fprintf(file, "\tsetle %%al\n");
 			fprintf(file, "\tmovzbq %%al, %%rax\n");
 			break;
+		case LEX_GEQ:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tcmpq %%rdx, %%rcx\n");
+			fprintf(file, "\tsetge %%al\n");
+			fprintf(file, "\tmovzbq %%al, %%rax\n");
+			break;
+		case LEX_GREATER:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tcmpq %%rdx, %%rcx\n");
+			fprintf(file, "\tsetg %%al\n");
+			fprintf(file, "\tmovzbq %%al, %%rax\n");
+			break;
+		case LEX_LESS:
+			left = child->firstChild;
+			right = left->nextSibling;
+
+			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
+			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
+			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			fprintf(file, "\tmovq %%rax, %%rdx\n");
+
+			// Now we evaluate the leq status, and then store it into %rax
+			fprintf(file, "\tcmpq %%rdx, %%rcx\n");
+			fprintf(file, "\tsetl %%al\n");
+			fprintf(file, "\tmovzbq %%al, %%rax\n");
+			break;
 		case LEX_EQUALS:
 			left = child->firstChild;
 			right = left->nextSibling;

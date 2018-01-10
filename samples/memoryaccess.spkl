@@ -1,15 +1,15 @@
 fn prints(str){
 	var size = len(str);
-	size = size - 1;
 
 	var i = 0;
 
-	while(i <= size){
+	while(i < size){
 		printc(str{i});
 		i = i + 1;
 	};
 
 	newline();
+
 }
 
 fn main(){

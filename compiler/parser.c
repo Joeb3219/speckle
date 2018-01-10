@@ -27,6 +27,9 @@ void parseFuncCall(Lexeme* head);
 void parseExpression(Lexeme* head);
 void parseLogic(Lexeme* head);
 void parseLeq(Lexeme* head);
+void parseGeq(Lexeme* head);
+void parseGreater(Lexeme* head);
+void parseLess(Lexeme* head);
 void parseEquals(Lexeme* head);
 void parseOr(Lexeme* head);
 void parseAnd(Lexeme* head);
@@ -238,7 +241,7 @@ void parseExpression(Lexeme* head){
 	addChild(head, expression);
 
 	if(isPeekType(MINUS) || isPeekType(PLUS) || isPeekType(TIMES) || isPeekType(DIV) || isPeekType(MOD)) parseMath(expression);
-	else if(isPeekType(LEQ) || isPeekType(AND) || isPeekType(OR) || isTokenType(NOT) || isPeekType(EQUALS_EQUALS)) parseLogic(expression);
+	else if(isPeekType(LEQ) || isPeekType(GREATER) || isPeekType(LESS) || isPeekType(GEQ) || isPeekType(AND) || isPeekType(OR) || isTokenType(NOT) || isPeekType(EQUALS_EQUALS)) parseLogic(expression);
 	else if(isPeekType(PAREN_OPEN)) parseFuncCall(expression);
 	else if((isTokenType(IDENTIFIER) && isPeekType(CURLY_OPEN))){
 		// TODO: fix this hellhole 1/10/18
@@ -260,6 +263,9 @@ void parseLogic(Lexeme* head){
 	addChild(head, logic);
 
 	if(isPeekType(LEQ)) parseLeq(logic);
+	else if(isPeekType(GEQ)) parseGeq(logic);
+	else if(isPeekType(GREATER)) parseGreater(logic);
+	else if(isPeekType(LESS)) parseLess(logic);
 	else if(isPeekType(OR)) parseOr(logic);
 	else if(isPeekType(AND)) parseAnd(logic);
 	else if(isPeekType(EQUALS_EQUALS)) parseEquals(logic);
@@ -276,6 +282,42 @@ void parseLeq(Lexeme* head){
 	consume();
 
 	parseIdentOrNumber(leq);
+}
+
+void parseGeq(Lexeme* head){
+	Lexeme* geq = createLexeme(LEX_GEQ);
+	addChild(head, geq);
+
+	parseIdentOrNumber(geq);
+
+	if(!isTokenType(GEQ)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), GEQ);
+	consume();
+
+	parseIdentOrNumber(geq);
+}
+
+void parseGreater(Lexeme* head){
+	Lexeme* greater = createLexeme(LEX_GREATER);
+	addChild(head, greater);
+
+	parseIdentOrNumber(greater);
+
+	if(!isTokenType(GREATER)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), GREATER);
+	consume();
+
+	parseIdentOrNumber(greater);
+}
+
+void parseLess(Lexeme* head){
+	Lexeme* less = createLexeme(LEX_LESS);
+	addChild(head, less);
+
+	parseIdentOrNumber(less);
+
+	if(!isTokenType(LESS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), LESS);
+	consume();
+
+	parseIdentOrNumber(less);
 }
 
 void parseEquals(Lexeme* head){
@@ -546,6 +588,9 @@ char* lexemeTypeToChar(LexemeType type){
 		case LEX_RETURN: return "RETURN";
 		case LEX_LOGIC: return "LOGIC";
 		case LEX_LEQ: return "LEQ";
+		case LEX_GEQ: return "GEQ";
+		case LEX_GREATER: return "GREATER";
+		case LEX_LESS: return "LESS";
 		case LEX_EQUALS: return "EQUALS";
 		case LEX_OR: return "OR";
 		case LEX_AND: return "AND";

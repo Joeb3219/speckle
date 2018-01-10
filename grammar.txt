@@ -22,8 +22,11 @@ character: '[ANY ONE CHARACTER]' => breaks down into a number
 <expression>	:= <math> | <logic> | <identOrNumber> | <funcCall>
 <identOrNumber> := identifier | number | <element>
 
-<logic>			:= <leq> | <equals> | <or> | <and> | <not>
+<logic>			:= <leq> | <equals> | <or> | <and> | <not> | <geq> | <greater> | <less>
 <leq>			:= <identOrNumber> <= <identOrNumber>
+<geq>			:= <identOrNumber> <= <identOrNumber>
+<less>			:= <identOrNumber> <= <identOrNumber>
+<greater>		:= <identOrNumber> <= <identOrNumber>
 <equals>		:= <identOrNumber> == <identOrNumber>
 <or>			:= <identOrNumber> | <identOrNumber>
 <and>			:= <identOrNumber> & <identOrNumber>
