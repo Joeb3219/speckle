@@ -561,6 +561,13 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *i
 
 	compileStmtlist(file, stmtlist, variableMap, ifCounter);
 
+	// We explicitly add a return instruction incase the user forgets to include one,
+	// which will an error value of -1.
+	fprintf(file, "\tmovq $-1, %%rax\n");
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
 	fprintf(file, "\n\n");
 
 	destroyHashmap(variableMap);

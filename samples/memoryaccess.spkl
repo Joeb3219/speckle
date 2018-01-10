@@ -1,3 +1,17 @@
+fn prints(str){
+	var size = len(str);
+	size = size - 1;
+
+	var i = 0;
+
+	while(i <= size){
+		printc(str{i});
+		i = i + 1;
+	};
+
+	newline();
+}
+
 fn main(){
 	
 	var arr = {5};
@@ -8,22 +22,7 @@ fn main(){
 	arr{3} = 'l';
 	arr{4} = 'o';
 
-	var i = 0;
-	var element;
-
-	var size = len(arr);
-	size = size - 1;
-
-	while(i <= size){
-
-		element = arr{i};
-
-		printc(element);
-		newline();
-
-		i = i + 1;
-
-	};
+	prints(arr);
 
 	var arr2 = {2};
 	arr2{0} = {8};
