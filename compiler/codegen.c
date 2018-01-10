@@ -77,13 +77,10 @@ void findAllVariables(int* current, Lexeme* stmt, Hashmap* variables){
 	Lexeme* single;
 	if(stmt->type == LEX_DECLARATION){
 		single = stmt->firstChild;
-		if(single->type == LEX_ASSIGN){
-			single = single->firstChild;
-			if(single->type == LEX_IDENTIFIER){
-				// We have found an identifier! Call the press.
-				hashmapInsert(variables, single->token->data, *current);
-				(*current) -= INT_SIZE;
-			}
+		if(single->type == LEX_IDENTIFIER){
+			// We have found an identifier! Call the press.
+			hashmapInsert(variables, single->token->data, *current);
+			(*current) -= INT_SIZE;
 		}
 	}
 
@@ -222,6 +219,7 @@ void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* 
 			break;
 		case LEX_IDENTIFIER:
 		case LEX_NUMBER:
+		case LEX_ELEMENT:
 			compileIdentifierOrNumber(file, child, variables, ifCounter);
 			break;
 		case LEX_ASSIGN:
@@ -392,6 +390,7 @@ void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounte
 
 void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int* ifCounter){
 	if(node == NULL) return;
+	int variableOffset;
 
 	switch(node->type){
 		case LEX_IDENTIFIER:
@@ -399,6 +398,20 @@ void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int
 			break;
 		case LEX_NUMBER:
 			fprintf(file, "\tmovq $%d, %%rax\n", atoi(node->token->data));
+			break;
+		case LEX_ELEMENT:
+			// We store the base variable address in %rcx
+			variableOffset = hashmapRead(variables, node->firstChild->token->data);
+			fprintf(file, "\tmovq %d(%%rbp), %%rcx\n", variableOffset);
+			compileIdentifierOrNumber(file, node->firstChild->nextSibling, variables, ifCounter);
+
+			// Normally, we'd use LEA, but afaik we can't do that with two registers.
+			// Instead, we add the offset now stored in %rax to the base variable stored in %rcx.
+			fprintf(file, "\timulq $8, %%rax\n");
+			fprintf(file, "\taddq %%rax, %rcx\n");
+
+			// We now need to move the contents of the (%rcx) to the return register -- %rax
+			fprintf(file, "\tmovq 0(%%rcx), %%rax\n");
 			break;
 		default:
 			printf("ERROR!!!!!!\n");
@@ -459,24 +472,69 @@ void compileMath(FILE* file, Lexeme* math, Hashmap* variables, int* ifCounter){
 void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter){
 	if(declaration == NULL || declaration->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#declaration\n");
-	compileAssign(file, declaration->firstChild, variables, ifCounter);
+
+	Lexeme* identifier = declaration->firstChild;
+	Lexeme* right = identifier->nextSibling;
+	int variableOffset = hashmapRead(variables, identifier->token->data);
+
+	// If there is no right side, then the user simply declared but didn't instantiate.
+	// We will set it to 0 for them.
+	if(right == NULL){
+		fprintf(file, "\tmovq $0, %d(%%rbp)\n", variableOffset);
+		return;
+	}
+
+	// If the right side is an array declaration, then we need to create that memory on the heap.
+	if(right->type == LEX_ARRAY){
+		// The number of elements will strictly be either a number or an identifier, so we
+		// go ahead and load it into %rax.
+		compileIdentifierOrNumber(file, right->firstChild, variables, ifCounter);
+		fprintf(file, "\tpushq %%rax\n");		
+		fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "malloc");
+	}else compileExpression(file, right, variables, ifCounter);
+
+	// Regardless, a value is pushed to %%rax, so we can just move it on into the right area.
+	fprintf(file, "\tmovq %%rax, %d(%rbp)\n", variableOffset);
 }
 
 void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter){
 	if(assign == NULL || assign->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#assign\n");
 
-	Lexeme* identifier = findFirstLexemeOccurence(assign, LEX_IDENTIFIER);
-	Lexeme* expression = findFirstLexemeOccurence(assign, LEX_EXPRESSION);
+	Lexeme* left = assign->firstChild;
+	Lexeme* right = left->nextSibling;
+	int variableOffset;
 
-	// First, we must generate the expression code needed to create the result.
-	// We will then store this in the register %rax
+	// If the right side is an array declaration, then we need to create that memory on the heap.
+	if(right->type == LEX_ARRAY){
+		// The number of elements will strictly be either a number or an identifier, so we
+		// go ahead and load it into %rax.
+		compileIdentifierOrNumber(file, right->firstChild, variables, ifCounter);
+		fprintf(file, "\tpushq %%rax\n");		
+		fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "malloc");
+	}else compileExpression(file, right, variables, ifCounter);
 
-	compileExpression(file, expression, variables, ifCounter);
+	// Now, we focus on what we can do with this left side.
+	// Regardless of what it is, we will have a variableOffset for the identifier part of it (elements have an identifier attached).
+	if(left->type == LEX_ELEMENT){
+		// We store the base variable address in %rcx
+		// We then move the expression's answer to %rdx, as evaluating the offset will take place in %rax.
+		variableOffset = hashmapRead(variables, left->firstChild->token->data);
+		fprintf(file, "\tmovq %d(%%rbp), %%rcx\n", variableOffset);
+		fprintf(file, "\tmovq %%rax, %%rdx\n");
+		compileIdentifierOrNumber(file, left->firstChild->nextSibling, variables, ifCounter);
 
-	int variableOffset = hashmapRead(variables, identifier->token->data);
+		// Normally, we'd use LEA, but afaik we can't do that with two registers.
+		// Instead, we add the offset now stored in %rax to the base variable stored in %rcx.
+		fprintf(file, "\timulq $8, %%rax\n");
+		fprintf(file, "\taddq %%rax, %rcx\n");
 
-	fprintf(file, "\tmovq %%rax, %d(%rbp)\n", variableOffset);
+		// Now, our resultant answer is stored in %rdx, and the destination address is in %rcx.
+		fprintf(file, "\tmovq %%rdx, 0(%%rcx)\n");
+	}else{
+		variableOffset = hashmapRead(variables, left->token->data);
+		fprintf(file, "\tmovq %%rax, %d(%%rbp)\n", variableOffset);
+	}
 }
 
 void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *ifCounter){
@@ -595,6 +653,41 @@ void compileToASM(FILE* file, Lexeme* head){
   	fprintf(file, "\tmovl $0, %%eax\n");
   	fprintf(file, "\tcall printf\n");
 	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
+	// A malloc function
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "malloc");
+	fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "malloc");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "malloc");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $16, %%rsp\n");
+  	fprintf(file, "\tmovq 16(%%rbp), %%rax\n");
+  	fprintf(file, "\taddq $1, %%rax\n");
+	fprintf(file, "\tsalq $3, %rax\n");
+    fprintf(file, "\tcltq\n");
+    fprintf(file, "\tmovq %%rax, %%rdi\n");
+  	fprintf(file, "\tmovl $0, %%eax\n");
+  	fprintf(file, "\tcall malloc\n");
+  	fprintf(file, "\tmovq 16(%%rbp), %%rbx\n");
+  	fprintf(file, "\tmovq %%rbx, 0(%%rax)\n");
+  	fprintf(file, "\taddq $8, %%rax\n");
+	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
+	// A malloc function
+	fprintf(file, ".globl %s%s\n", FUNCTION_PREPEND, "len");
+	fprintf(file, ".type %s%s, @function\n", FUNCTION_PREPEND, "len");
+	fprintf(file, "%s%s:\n", FUNCTION_PREPEND, "len");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $16, %%rsp\n");
+  	fprintf(file, "\tmovq 16(%%rbp), %%rax\n");
+  	fprintf(file, "\tleaq -8(%%rax), %%rax\n");
+  	fprintf(file, "\tmovq 0(%%rax), %rax\n");
+  	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");
 

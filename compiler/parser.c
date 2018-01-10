@@ -42,6 +42,8 @@ void parseMult(Lexeme* head);
 void parseDiv(Lexeme* head);
 void parseAdd(Lexeme* head);
 void parseMod(Lexeme* head);	
+void parseElement(Lexeme* head);
+void parseArray(Lexeme* head);	
 
 Token** current = NULL;
 
@@ -108,25 +110,76 @@ void parseStmt(Lexeme* head){
 	else parseExpression(stmt);
 }
 
+// <declaration>	:= var identifier | var identifier = <expression> | var identifier = <array>
 void parseDeclaration(Lexeme* head){
 	Lexeme* declaration = createLexeme(LEX_DECLARATION);
 	addChild(head, declaration);
 
 	if(!isTokenType(VAR)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), VAR);
 	consume();
-	parseAssign(declaration);
+	
+	// If the token following our identifier is an equals sign, then we will parse up to the assignment
+	// Otherwise, we will just cut it off as a pure declaration.
+	if(isPeekType(EQUALS)){
+		if(!isTokenType(IDENTIFIER)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), IDENTIFIER);
+		parseIdentifier(declaration);
+
+		if(!isTokenType(EQUALS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), EQUALS);
+		consume();
+
+		// If we find the next token to be an open curly brace, then we are attempting to create an array.
+		if(isTokenType(CURLY_OPEN)) parseArray(declaration);
+		else parseExpression(declaration);
+	}else parseIdentifier(declaration);
 }
 
+// <element>		:= identifier { <identOrNumber> }
+void parseElement(Lexeme* head){
+	Lexeme* element = createLexeme(LEX_ELEMENT);
+	addChild(head, element);
+
+	parseIdentifier(element);
+
+	if(!isTokenType(CURLY_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_OPEN);
+	consume();	
+
+	if(isTokenType(IDENTIFIER)) parseIdentifier(element);
+	else if(isTokenType(NUMBER)) parseNumber(element);
+	else ERR_UNEXPECTED_TOKEN(currentToken());
+
+	if(!isTokenType(CURLY_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_CLOSE);
+	consume();	
+}
+
+// <array>			:= { <identOrNumber> }
+void parseArray(Lexeme* head){
+	Lexeme* array = createLexeme(LEX_ARRAY);
+	addChild(head, array);
+
+	if(!isTokenType(CURLY_OPEN)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_OPEN);
+	consume();
+
+	parseIdentOrNumber(array);
+
+	if(!isTokenType(CURLY_CLOSE)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), CURLY_CLOSE);
+	consume();	
+}
+
+// <assign>		:= identifier = <expression> | <element> = <expression> | identifier = <array> | <element> = <array>
 void parseAssign(Lexeme* head){
 	Lexeme* assign = createLexeme(LEX_ASSIGN);
 	addChild(head, assign);
 
-	if(!isTokenType(IDENTIFIER)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), IDENTIFIER);
-	parseIdentifier(assign);
+	if(isTokenType(IDENTIFIER) && !isPeekType(CURLY_OPEN)) parseIdentifier(assign);
+	else if(isPeekType(CURLY_OPEN)) parseElement(assign);
+	else ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), IDENTIFIER);
 
 	if(!isTokenType(EQUALS)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), EQUALS);
 	consume();
-	parseExpression(assign);
+
+	// If we find the next token to be an open curly brace, then we are attempting to create an array.
+	if(isTokenType(CURLY_OPEN)) parseArray(assign);
+	else parseExpression(assign);
 }
 
 //<func>			:= fn identifier ( <arglist> ) { <stmtlist> }
@@ -179,21 +232,26 @@ void parseFuncCall(Lexeme* head){
 	consume();
 }
 
+// <expression>	:= <math> | <logic> | <identOrNumber> | <funcCall>
 void parseExpression(Lexeme* head){
 	Lexeme* expression = createLexeme(LEX_EXPRESSION);
 	addChild(head, expression);
 
-
 	if(isPeekType(MINUS) || isPeekType(PLUS) || isPeekType(TIMES) || isPeekType(DIV) || isPeekType(MOD)) parseMath(expression);
 	else if(isPeekType(LEQ) || isPeekType(AND) || isPeekType(OR) || isTokenType(NOT) || isPeekType(EQUALS_EQUALS)) parseLogic(expression);
 	else if(isPeekType(PAREN_OPEN)) parseFuncCall(expression);
-	else if(isPeekType(EQUALS)) parseAssign(expression);
+	else if((isTokenType(IDENTIFIER) && isPeekType(CURLY_OPEN))){
+		// TODO: fix this hellhole 1/10/18
+		if(currentToken()->next->next->next->next->type == EQUALS) parseAssign(expression);
+		else parseElement(expression);
+	}else if(isPeekType(EQUALS)) parseAssign(expression);
 	else parseIdentOrNumber(expression);
 }
 
 
 void parseIdentOrNumber(Lexeme* head){
-	if(isTokenType(IDENTIFIER)) parseIdentifier(head);
+	if(isPeekType(CURLY_OPEN)) parseElement(head);
+	else if(isTokenType(IDENTIFIER)) parseIdentifier(head);
 	else if(isTokenType(NUMBER)) parseNumber(head);
 }
 
@@ -505,6 +563,8 @@ char* lexemeTypeToChar(LexemeType type){
 		case LEX_DIV: return "DIV";
 		case LEX_IDENTORNUMBER: return "IDENT_OR_NUMBER";
 		case LEX_FUNCTIONS: return "FUNCTIONS";
+		case LEX_ELEMENT: return "ELEMENT";
+		case LEX_ARRAY: return "ARRAY";
 		default: return "ERROR";
 	}
 }

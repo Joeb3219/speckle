@@ -12,14 +12,15 @@ character: '[ANY ONE CHARACTER]' => breaks down into a number
 <stmtlist>		:= <stmt> ; <stmtlist> | epsilon
 <stmt>			:= <declaration> | <expression> | <return> | <if>
 
-<return>		:= 
-<declaration>	:= var <assign>
-<assign>		:= identifier = <expression>
+<array>			:= { <identOrNumber> }
+<element>		:= identifier { <identOrNumber> }
+<declaration>	:= var identifier | var identifier = <expression> | var identifier = <array>
+<assign>		:= identifier = <expression> | <element> = <expression> | identifier = <array> | <element> = <array>
 
 <func>			:= fn identifier ( <arglist> ) { <stmtlist> }
 <funcCall>		:= identifier ( <paramlist> )
 <expression>	:= <math> | <logic> | <identOrNumber> | <funcCall>
-<identOrNumber> := identifier | number
+<identOrNumber> := identifier | number | <element>
 
 <logic>			:= <leq> | <equals> | <or> | <and> | <not>
 <leq>			:= <identOrNumber> <= <identOrNumber>

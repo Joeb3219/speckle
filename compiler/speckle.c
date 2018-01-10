@@ -102,7 +102,7 @@ int main(int argc, char** argv){
 	// Now we can compile the program.
 	// TODO: allow other compilers and configs than just GCC.
 	if(fork() == 0){
-		execl("/usr/bin/gcc", "gcc", "-static", "a.s", "-o", args->outputName, NULL);
+		execl("/usr/bin/gcc", "gcc", "-g", "-static", "a.s", "-o", args->outputName, NULL);
 		exit(1);
 	}else{
 		// We wait for this GCC call to finish.

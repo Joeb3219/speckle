@@ -1,0 +1,29 @@
+fn main(){
+	
+	var arr = {5};
+
+	arr{1} = 'e';
+	arr{2} = 'l';
+	arr{0} = 'H';
+	arr{3} = 'l';
+	arr{4} = 'o';
+
+	var i = 0;
+	var element;
+
+	var size = len(arr);
+	size = size - 1;
+
+	while(i <= size){
+
+		element = arr{i};
+
+		printc(element);
+		newline();
+
+		i = i + 1;
+
+	};
+
+	ret 0;
+}
