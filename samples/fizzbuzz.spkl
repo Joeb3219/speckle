@@ -1,0 +1,58 @@
+fn fizzbuzz(low, high){
+
+	var current = low;
+	var isDiv3 = 0;
+	var isDiv5 = 0;
+	var isDiv15 = 0;
+	var tmp = 0;
+	
+	while(current <= high){
+
+		tmp = current % 15;
+		isDiv15 = tmp == 0;
+
+		tmp = current % 5;
+		isDiv5 = tmp == 0;
+		
+		tmp = current % 3;
+		isDiv3 = tmp == 0;
+
+		if( isDiv15 ){
+			printc('F'); printc('i'); printc('z'); printc('z'); printc('B'); printc('u'); printc('z'); printc('z');
+			newline();
+		};
+
+		if(!isDiv15){
+			if( isDiv5 ){
+				printc('B'); printc('u'); printc('z'); printc('z');
+				newline();
+			};
+
+			if( !isDiv5 ){
+				if ( isDiv3 ){
+					printc('F'); printc('i'); printc('z'); printc('z');
+					newline();
+				};
+
+				if( !isDiv3 ){
+					printn(current);
+					newline();
+				};
+			};
+		};
+
+		current = current + 1;
+
+	};
+
+	ret 0;
+
+}
+
+fn main(){
+
+	fizzbuzz(1, 16);
+
+	ret 0;
+
+}

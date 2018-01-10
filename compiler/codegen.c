@@ -353,7 +353,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
 			compileIdentifierOrNumber(file, left, variables, ifCounter);
 
-			fprintf(file, "test %%rax, %%rax\n");
+			fprintf(file, "\ttest %%rax, %%rax\n");
 			fprintf(file, "\tsetz %%al\n");
 			fprintf(file, "\tmovzbq %%al, %%rax\n");
 			break;
@@ -439,6 +439,16 @@ void compileMath(FILE* file, Lexeme* math, Hashmap* variables, int* ifCounter){
 			fprintf(file, "\tmovq %%rbx, %%rax\n");
 			fprintf(file, "\tcqto\n");
 			fprintf(file, "\tidivq %%rcx\n");
+			break;
+		case LEX_MOD:
+			// The assembly divide instruction takes the given register, divides %rax by it, and then places the result
+			// into %rax
+			// Thus, we have to do some movement to make this do the correct computation.
+			fprintf(file, "\tmovq %%rax, %%rcx\n");
+			fprintf(file, "\tmovq %%rbx, %%rax\n");
+			fprintf(file, "\tcqto\n");
+			fprintf(file, "\tidivq %%rcx\n");
+			fprintf(file, "\tmovq %%rdx, %%rax\n");
 			break;
 		default:
 			printf("Uh oh, unknown math\n");

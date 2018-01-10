@@ -85,6 +85,7 @@ void identifyToken(Token* token, FILE* file){
 		else if(strcmp("+", token->data) == 0) type = PLUS;
 		else if(strcmp("*", token->data) == 0) type = TIMES;
 		else if(strcmp("/", token->data) == 0) type = DIV;
+		else if(strcmp("%", token->data) == 0) type = MOD;
 		else if(strcmp(",", token->data) == 0) type = COMMA;
 		else if(isNumber(token)) type = NUMBER;
 		else if(isIdentifier(token)) type = IDENTIFIER;
@@ -118,6 +119,7 @@ char* typeToText(TokenType type){
 		case PLUS: 			return "PLUS";
 		case TIMES: 		return "TIMES";
 		case DIV: 			return "DIV";
+		case MOD: 			return "MOD";
 		case RET: 			return "RET";
 		case FN: 			return "FN";
 		case VAR: 			return "VAR";

@@ -32,9 +32,11 @@ character: '[ANY ONE CHARACTER]' => breaks down into a number
 <paramlist>		:= <identOrNumber> , <paramlist> | <identOrNumber> | epsilon
 
 <if>			:= if ( <expression> ) { <stmtlist> }
+<while>			:= while ( <expression> ) { <stmtlist> }
 
-<math>			:= <sub> | <add> | <mult> | <div>
+<math>			:= <sub> | <add> | <mult> | <div> | <mod>
 <sub>			:= <identOrNumber> - <identOrNumber>
 <add>			:= <identOrNumber> + <identOrNumber>
 <mult>			:= <identOrNumber> * <identOrNumber>
 <div>			:= <identOrNumber> / <identOrNumber>
+<mod>			:= <identOrNumber> % <identOrNumber>

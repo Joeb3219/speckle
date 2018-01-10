@@ -1,43 +1,28 @@
-fn add(a, b){
-	var nega = - 0 a;
-	var z = - nega b;
-	ret - 0 z;
-}
-
 fn printAllChars(start, end){
 	var x = 0;
 
-	if(<= end start ){
+	if(end <= start){
 		ret 0;
 	};
 
 	printc(start);
 
-	if(== start end){
+	if(start == end){
 		ret 0;
 	};
 
-	x = add(start, 1);
+	x = start + 1;
 	ret printAllChars(x, end);
 }
 
 fn main(){
 	printc('1');
 	printc(':');
-	var x = read();
-	newline();
 
-	printc('2');
-	printc(':');
-	var y = read();
-	newline();
+	var start = 'A';
+	var end = 'z' + 1;
 
-	printn(x);
-	newline();
-	printn(y);
-	newline();
-
-	printAllChars(x, y);
+	printAllChars(start, end);
 	newline();
 	ret 0;
 }
