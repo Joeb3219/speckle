@@ -26,6 +26,9 @@
 	// An error for unexepected end of file.
 	#define ERR_UNEXPECTED_EOF(T) {ERR_NO_ARGS(SEVERE, T->lineNo, T->colNo, "Unexpected end of file.")}
 
+	// An error for an unknown identifier.
+	#define ERR_UNKNOWN_IDENTIFIER(T) {ERR(SEVERE, T->lineNo, T->colNo, "Unknown identifier: %s", T->data)}
+
 	void error_log(int type, char* errorMessage, ...);
 
 #endif

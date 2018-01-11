@@ -26,7 +26,7 @@ Hashmap* createHashmap(){
 	map->filled = 0;
 	// By default, we set every pointer to NULL. This helps when we later empty it,
 	// as we can simply check if the data is NULL.
-	for(i = 0; i < map->capacity; i ++) map->data[i] = 0;
+	for(i = 0; i < map->capacity; i ++) map->data[i] = HASHMAP_UNKNOWN_VALUE;
 	return map;
 }
 

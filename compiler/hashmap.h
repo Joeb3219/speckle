@@ -1,6 +1,8 @@
 #ifndef _HASHMAP_H_
 #define _HASHMAP_H_
 
+	#define HASHMAP_UNKNOWN_VALUE 0
+
 	struct Hashmap{
 		int capacity;
 		int filled;

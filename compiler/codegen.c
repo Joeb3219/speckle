@@ -237,11 +237,14 @@ void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* 
 void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter){
 	if(expression == NULL || expression->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#expr_nonmath\n");
+	int variableOffset;
 
 	Lexeme* child = expression->firstChild;
 	switch(child->type){
 		case LEX_IDENTIFIER:
-			fprintf(file, "\tmovq %d(%%rbp), %%rax\n", hashmapRead(variables, child->token->data));
+			variableOffset = hashmapRead(variables, child->token->data);
+			if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(child->token);
+			fprintf(file, "\tmovq %d(%%rbp), %%rax\n", variableOffset);
 			break;
 		case LEX_NUMBER:
 			fprintf(file, "\tmovq $%d, %%rax\n", atoi(child->token->data));
@@ -442,7 +445,9 @@ void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int
 
 	switch(node->type){
 		case LEX_IDENTIFIER:
-			fprintf(file, "\tmovq %d(%%rbp), %%rax\n", hashmapRead(variables, node->token->data));
+			variableOffset = hashmapRead(variables, node->token->data);
+			if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(node->token);
+			fprintf(file, "\tmovq %d(%%rbp), %%rax\n", variableOffset);
 			break;
 		case LEX_NUMBER:
 			fprintf(file, "\tmovq $%d, %%rax\n", atoi(node->token->data));
@@ -450,6 +455,7 @@ void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int
 		case LEX_ELEMENT:
 			// We store the base variable address in %rcx
 			variableOffset = hashmapRead(variables, node->firstChild->token->data);
+			if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(node->token);
 			fprintf(file, "\tmovq %d(%%rbp), %%rcx\n", variableOffset);
 			compileIdentifierOrNumber(file, node->firstChild->nextSibling, variables, ifCounter);
 
@@ -524,6 +530,7 @@ void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int
 	Lexeme* identifier = declaration->firstChild;
 	Lexeme* right = identifier->nextSibling;
 	int variableOffset = hashmapRead(variables, identifier->token->data);
+	if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(identifier->token);
 
 	// If there is no right side, then the user simply declared but didn't instantiate.
 	// We will set it to 0 for them.
@@ -568,6 +575,7 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 		// We store the base variable address in %rcx
 		// We then move the expression's answer to %rdx, as evaluating the offset will take place in %rax.
 		variableOffset = hashmapRead(variables, left->firstChild->token->data);
+		if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(left->firstChild->token);
 		fprintf(file, "\tmovq %d(%%rbp), %%rcx\n", variableOffset);
 		fprintf(file, "\tmovq %%rax, %%rdx\n");
 		compileIdentifierOrNumber(file, left->firstChild->nextSibling, variables, ifCounter);
@@ -581,6 +589,7 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 		fprintf(file, "\tmovq %%rdx, 0(%%rcx)\n");
 	}else{
 		variableOffset = hashmapRead(variables, left->token->data);
+		if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(left->token);
 		fprintf(file, "\tmovq %%rax, %d(%%rbp)\n", variableOffset);
 	}
 }
