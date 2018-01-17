@@ -224,13 +224,33 @@ Token* tokenize(Arguments* args, FILE* file){
 		// Any spacing elements should be handled to create a new token.
 		if(i == 31 || c == ' ' || c == '\t' || c == '\n'){
 			prevWasSpace = 1;
+
+			j = fgetc(file);
+                        ungetc(j, file);
+
+			// If this entry is a space, and the prev is a "'", and the next is a "'", then we are dealing with a space character.
+			if(i == 1 && current->data[0] == '\''){
+				if(c == ' ' && j == '\''){
+					colNo ++;
+					current->data[i++] = ' ';
+					current->data[i++] = fgetc(file);
+					current->type = NUMBER;
+					char* newString = malloc(sizeof(char) * 8);
+	                                sprintf(newString, "%d", (int) current->data[1]);
+	                                free(current->data);
+       		                        current->data = newString;
+					current->next = createToken();
+		                        current->next->prev = current;
+		                        current = current->next;
+        		                current->lineNo = lineNo;
+        		                current->colNo = colNo + 1;
+					i = 0;
+				}
+			}
+
 			if(i == 0){
-				if(c == '\n'){
-					j = fgetc(file);
-					ungetc(j, file);
-					if(j == '\n'){
-						lineNo ++;
-					}
+				if(c == '\n' && j == '\n'){
+					lineNo ++;
 				}
 				continue;
 			}

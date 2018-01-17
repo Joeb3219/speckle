@@ -7,9 +7,13 @@ fn main(){
 		result = x * x;
 		
 		printn(x);
+		printc(' ');
 		printc('*');
+		printc(' ');
 		printn(x);
+		printc(' ');
 		printc('=');
+		printc(' ');
 
 		printn(result);
 		newline();
