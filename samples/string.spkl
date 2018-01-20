@@ -1,0 +1,24 @@
+fn printstring(s){
+
+	var current = 0;
+	var length = len(s);
+	while( current < length ){
+		var val = s{current};
+		printc(val);
+		current = current + 1;
+	};
+
+}
+
+fn main(){
+	var x = "Hello World";
+	printn(len(x));
+	newline();
+
+	printstring(x);
+
+
+	newline();
+
+	ret 0;
+}

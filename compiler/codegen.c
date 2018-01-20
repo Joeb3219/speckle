@@ -13,21 +13,22 @@
 #define PRINT_LABELS_IN_ASM 0
 
 // Private function declarations
-void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int* ifCounter);
+void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int* ifCounter, Hashmap* stringData);
 int findArguments(Lexeme* function, Hashmap* hashmap);
+void findAndCompileStrings(FILE* file, Lexeme* stmt, Hashmap* hashmap, int* currentStringNumber);
 Lexeme* findFirstLexemeOccurence(Lexeme* head, LexemeType type);
-void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter);
-void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter);
-void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCounter);
-void compileMath(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter);
-void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter);
-void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter);
-void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter);
-void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter);
-void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter);
-void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter);
-void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter);
-void compileIdentifierOrNumber(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter);
+void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileMath(FILE* file, Lexeme* sub, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter, Hashmap* stringData);
+void compileIdentifierOrNumber(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter, Hashmap* stringData);
 
 // Function implementations
 
@@ -93,18 +94,44 @@ void findAllVariables(int* current, Lexeme* stmt, Hashmap* variables){
 	}
 }
 
-void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter){
+
+void findAndCompileStrings(FILE* file, Lexeme* stmt, Hashmap* hashmap, int* currentStringNumber){
+	if(stmt == NULL) return;
+
+	long stringValue;
+	
+	Lexeme* single;
+	if(stmt->type == LEX_STRING){
+
+		hashmapInsert(hashmap, stmt->token->data, *currentStringNumber);
+		fprintf(file, "STR_%d:\n", *currentStringNumber);
+		fprintf(file, "\t.ascii %s\n", stmt->token->data);
+		fprintf(file, "\t.text\n");
+
+		*currentStringNumber = (*currentStringNumber) + 1;
+	}
+
+	findAndCompileStrings(file, stmt->firstChild, hashmap, currentStringNumber);
+
+	single = stmt->nextSibling;
+	while(single != NULL){
+		findAndCompileStrings(file, single, hashmap, currentStringNumber);
+		single = single->nextSibling;
+	}
+}
+
+void compileStmtlist(FILE* file, Lexeme* stmtlist, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(stmtlist == NULL) return;
 	if(stmtlist->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#stmtlist\n");
 
-	compileStmt(file, stmtlist->firstChild, variables, ifCounter);
+	compileStmt(file, stmtlist->firstChild, variables, ifCounter, stringData);
 
 	if(stmtlist->firstChild->nextSibling == NULL) return;
-	compileStmtlist(file, stmtlist->firstChild->nextSibling, variables, ifCounter);
+	compileStmtlist(file, stmtlist->firstChild->nextSibling, variables, ifCounter, stringData);
 }
 
-void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter){
+void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(ifNode == NULL || ifNode->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#if\n");
 
@@ -120,7 +147,7 @@ void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter){
 	// This will store some value in %rax
 	// If this value is equal to 1, we will do a jump to if_branch_%d_success
 	// Otherwise, we go to the fail branch.
-	compileExpression(file, expression, variables, ifCounter);
+	compileExpression(file, expression, variables, ifCounter, stringData);
 
 	fprintf(file, "\tcmpq $1, %%rax\n");
 	fprintf(file, "\tje .if_branch_%d_success\n", currentIfCount);
@@ -131,14 +158,14 @@ void compileIf(FILE* file, Lexeme* ifNode, Hashmap* variables, int* ifCounter){
 	fprintf(file, ".if_branch_%d_success:\n", currentIfCount);
 
 	// Now we can compile the statementlist
-	compileStmtlist(file, stmtlist, variables, ifCounter);
+	compileStmtlist(file, stmtlist, variables, ifCounter, stringData);
 
 	// Now we can compile the failure jump point
 	fprintf(file, ".if_branch_%d_fail:\n", currentIfCount);
 
 }
 
-void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCounter){
+void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(whileNode == NULL || whileNode->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#while\n");
 
@@ -158,14 +185,14 @@ void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCoun
 	// This will store some value in %rax
 	// If this value is not equal to 1, we will continue.
 	// If this value is ANYTHING OTHER THAN 1, we will skip past the statementlist body.
-	compileExpression(file, expression, variables, ifCounter);
+	compileExpression(file, expression, variables, ifCounter, stringData);
 
 	fprintf(file, "\tcmpq $1, %%rax\n");
 	fprintf(file, "\tjne .while_branch_%d_finish\n", currentIfCount);
 
 	// If we didn't jump, then we are meant to execute the code.
 	// Now we can compile the statementlist
-	compileStmtlist(file, stmtlist, variables, ifCounter);
+	compileStmtlist(file, stmtlist, variables, ifCounter, stringData);
 
 	// Now that we're done all of this, we jump back to the top of the while loop and see where we are at.
 	fprintf(file, "\tjmp .while_branch_%d_test\n", currentIfCount);
@@ -175,26 +202,26 @@ void compileWhile(FILE* file, Lexeme* whileNode, Hashmap* variables, int* ifCoun
 
 }
 
-void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
+void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(stmt == NULL || stmt->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#stmt\n");
 
 	Lexeme* child = stmt->firstChild;
 	switch(child->type){
 		case LEX_DECLARATION:
-			compileDeclaration(file, child, variables, ifCounter);
+			compileDeclaration(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_EXPRESSION:
-			compileExpression(file, child, variables, ifCounter);
+			compileExpression(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_RETURN:
-			compileReturn(file, child, variables, ifCounter);
+			compileReturn(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_IF:
-			compileIf(file, child, variables, ifCounter);
+			compileIf(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_WHILE:
-			compileWhile(file, child, variables, ifCounter);
+			compileWhile(file, child, variables, ifCounter, stringData);
 			break;
 		default:
 			printf("ERROR!!\n");
@@ -202,31 +229,32 @@ void compileStmt(FILE* file, Lexeme* stmt, Hashmap* variables, int* ifCounter){
 	}
 }
 
-void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter){
+void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(expression == NULL || expression->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#expression\n");
 
 	Lexeme* child = expression->firstChild;
 	switch(child->type){
 		case LEX_MATH:
-			compileMath(file, child, variables, ifCounter);
+			compileMath(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_LOGIC:
-			compileLogic(file, child, variables, ifCounter);
+			compileLogic(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_FUNCCALL:
-			compileFuncCall(file, child, variables, ifCounter);
+			compileFuncCall(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_IDENTIFIER:
 		case LEX_NUMBER:
 		case LEX_ELEMENT:
-			compileIdentifierOrNumber(file, child, variables, ifCounter);
+		case LEX_STRING:
+			compileIdentifierOrNumber(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_ASSIGN:
-			compileAssign(file, child, variables, ifCounter);
+			compileAssign(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_EXPRESSION:
-			compileExpression(file, child, variables, ifCounter);
+			compileExpression(file, child, variables, ifCounter, stringData);
 			break;
 		default:
 			printf("ERROR!!\n");
@@ -234,7 +262,7 @@ void compileExpression(FILE* file, Lexeme* expression, Hashmap* variables, int* 
 	}
 }
 
-void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter){
+void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(expression == NULL || expression->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#expr_nonmath\n");
 	int variableOffset;
@@ -250,13 +278,13 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 			fprintf(file, "\tmovq $%d, %%rax\n", atoi(child->token->data));
 			break;
 		case LEX_LOGIC:
-			compileLogic(file, child, variables, ifCounter);
+			compileLogic(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_ASSIGN:
-			compileAssign(file, child, variables, ifCounter);
+			compileAssign(file, child, variables, ifCounter, stringData);
 			break;
 		case LEX_FUNCCALL:
-			compileFuncCall(file, child, variables, ifCounter);
+			compileFuncCall(file, child, variables, ifCounter, stringData);
 			break;
 		default:
 			printf("====\n");
@@ -265,20 +293,20 @@ void compileExpressionNonMath(FILE* file, Lexeme* expression, Hashmap* variables
 	}
 }
 
-void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter){
+void compileReturn(FILE* file, Lexeme* ret, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(ret == NULL || ret->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#return\n");
 	// First, we compile down the expression contained, which will output to %rax.
 	// We can then return directly from here.
 
-	compileExpression(file, ret->firstChild, variables, ifCounter);
+	compileExpression(file, ret->firstChild, variables, ifCounter, stringData);
 
 	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");
 }
 
-void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter){
+void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(logic == NULL || logic->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#logic\n");
 	
@@ -291,10 +319,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -307,10 +335,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -323,10 +351,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -339,10 +367,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -355,10 +383,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -371,10 +399,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -386,10 +414,10 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			right = left->nextSibling;
 
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rcx\n");
 			// Next, we parse the left side and its result will be stored in %rax, to be moved to %rdx
-			compileIdentifierOrNumber(file, right, variables, ifCounter);
+			compileIdentifierOrNumber(file, right, variables, ifCounter, stringData);
 			fprintf(file, "\tmovq %%rax, %%rdx\n");
 
 			// Now we evaluate the leq status, and then store it into %rax
@@ -400,7 +428,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 			left = child->firstChild;
 			
 			// First, we parse the left side and its result will be stored in %rax, to be moved to %rcx
-			compileIdentifierOrNumber(file, left, variables, ifCounter);
+			compileIdentifierOrNumber(file, left, variables, ifCounter, stringData);
 
 			fprintf(file, "\ttest %%rax, %%rax\n");
 			fprintf(file, "\tsetz %%al\n");
@@ -412,7 +440,7 @@ void compileLogic(FILE* file, Lexeme* logic, Hashmap* variables, int* ifCounter)
 	}
 }
 
-void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter){
+void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(call == NULL || call->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#funccall\n");
 
@@ -430,7 +458,7 @@ void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounte
 		// We now have child as the very last sibling in the list.
 		// For each child, we process the expression, which stores a value into %rax, and then push %rax.
 		while(child->parent->type == LEX_ARGLIST){
-			compileExpression(file, child, variables, ifCounter);
+			compileExpression(file, child, variables, ifCounter, stringData);
 			fprintf(file, "\tpushq %rax\n");
 			child = child->parent->prevSibling;
 		}
@@ -439,7 +467,7 @@ void compileFuncCall(FILE* file, Lexeme* call, Hashmap* variables, int* ifCounte
 	fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, identifier->token->data);
 }
 
-void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int* ifCounter){
+void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(node == NULL) return;
 	int variableOffset;
 
@@ -457,7 +485,7 @@ void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int
 			variableOffset = hashmapRead(variables, node->firstChild->token->data);
 			if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(node->token);
 			fprintf(file, "\tmovq %d(%%rbp), %%rcx\n", variableOffset);
-			compileIdentifierOrNumber(file, node->firstChild->nextSibling, variables, ifCounter);
+			compileIdentifierOrNumber(file, node->firstChild->nextSibling, variables, ifCounter, stringData);
 
 			// Normally, we'd use LEA, but afaik we can't do that with two registers.
 			// Instead, we add the offset now stored in %rax to the base variable stored in %rcx.
@@ -467,23 +495,37 @@ void compileIdentifierOrNumber(FILE* file, Lexeme* node, Hashmap* variables, int
 			// We now need to move the contents of the (%rcx) to the return register -- %rax
 			fprintf(file, "\tmovq 0(%%rcx), %%rax\n");
 			break;
+		case LEX_STRING:
+			// We move over to avoid the surrounding quotes.
+			fprintf(file, "\tmovq $%d, %%rax\n", strlen(node->token->data) - 2);
+			fprintf(file, "\tpushq %%rax\n");
+			fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "malloc");
+			
+			fprintf(file, "\tmovq $%d, %%rdx\n", strlen(node->token->data) - 2);
+			fprintf(file, "\tpushq %%rdx\n");
+			fprintf(file, "\tleaq %s%d(%%rip), %%rbx\n", "STR_", hashmapRead(stringData, node->token->data));
+			fprintf(file, "\tpushq %%rbx\n");
+			fprintf(file, "\tpushq %%rax\n");
+
+			fprintf(file, "\tcall memcpy_step\n");
+			break;
 		default:
 			printf("ERROR!!!!!!\n");
 			break;
 	}
 }
 
-void compileMath(FILE* file, Lexeme* math, Hashmap* variables, int* ifCounter){
+void compileMath(FILE* file, Lexeme* math, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(math == NULL || math->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#math\n");
 	
 	// Expression will, by default, store everything in %rax
 	// Thus, we will perform the left computation and then move %rax to %rbx.
-	compileIdentifierOrNumber(file, math->firstChild->firstChild, variables, ifCounter);
+	compileIdentifierOrNumber(file, math->firstChild->firstChild, variables, ifCounter, stringData);
 	fprintf(file, "\tmovq %%rax, %%rbx\n");
 
 	// Then, we can go ahead and compute the left side, stored in %rax, and then subtract %rbx - %rax
-	compileIdentifierOrNumber(file, math->firstChild->firstChild->nextSibling, variables, ifCounter);
+	compileIdentifierOrNumber(file, math->firstChild->firstChild->nextSibling, variables, ifCounter, stringData);
 
 	// We now will have a in %rbx, and b in %rax
 	// We will perform whatever computation is needed and store it in %rbx
@@ -523,7 +565,7 @@ void compileMath(FILE* file, Lexeme* math, Hashmap* variables, int* ifCounter){
 	}
 }
 
-void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter){
+void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(declaration == NULL || declaration->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#declaration\n");
 
@@ -543,16 +585,16 @@ void compileDeclaration(FILE* file, Lexeme* declaration, Hashmap* variables, int
 	if(right->type == LEX_ARRAY){
 		// The number of elements will strictly be either a number or an identifier, so we
 		// go ahead and load it into %rax.
-		compileIdentifierOrNumber(file, right->firstChild, variables, ifCounter);
+		compileIdentifierOrNumber(file, right->firstChild, variables, ifCounter, stringData);
 		fprintf(file, "\tpushq %%rax\n");		
 		fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "malloc");
-	}else compileExpression(file, right, variables, ifCounter);
+	}else compileExpression(file, right, variables, ifCounter, stringData);
 
 	// Regardless, a value is pushed to %%rax, so we can just move it on into the right area.
 	fprintf(file, "\tmovq %%rax, %d(%rbp)\n", variableOffset);
 }
 
-void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter){
+void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounter, Hashmap* stringData){
 	if(assign == NULL || assign->firstChild == NULL) return;
 	if(PRINT_LABELS_IN_ASM) fprintf(file, "\t#assign\n");
 
@@ -564,10 +606,10 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 	if(right->type == LEX_ARRAY){
 		// The number of elements will strictly be either a number or an identifier, so we
 		// go ahead and load it into %rax.
-		compileIdentifierOrNumber(file, right->firstChild, variables, ifCounter);
-		fprintf(file, "\tpushq %%rax\n");		
+		compileIdentifierOrNumber(file, right->firstChild, variables, ifCounter, stringData);
+		fprintf(file, "\tpushq %%rax\n");
 		fprintf(file, "\tcall %s%s\n", FUNCTION_PREPEND, "malloc");
-	}else compileExpression(file, right, variables, ifCounter);
+	}else compileExpression(file, right, variables, ifCounter, stringData);
 
 	// Now, we focus on what we can do with this left side.
 	// Regardless of what it is, we will have a variableOffset for the identifier part of it (elements have an identifier attached).
@@ -578,7 +620,7 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 		if(variableOffset == HASHMAP_UNKNOWN_VALUE) ERR_UNKNOWN_IDENTIFIER(left->firstChild->token);
 		fprintf(file, "\tmovq %d(%%rbp), %%rcx\n", variableOffset);
 		fprintf(file, "\tmovq %%rax, %%rdx\n");
-		compileIdentifierOrNumber(file, left->firstChild->nextSibling, variables, ifCounter);
+		compileIdentifierOrNumber(file, left->firstChild->nextSibling, variables, ifCounter, stringData);
 
 		// Normally, we'd use LEA, but afaik we can't do that with two registers.
 		// Instead, we add the offset now stored in %rax to the base variable stored in %rcx.
@@ -594,7 +636,7 @@ void compileAssign(FILE* file, Lexeme* assign, Hashmap* variables, int* ifCounte
 	}
 }
 
-void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *ifCounter){
+void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *ifCounter, Hashmap* stringData){
 	// Ensure that we are dealing with a function declaration
 	if(function->type != LEX_FUNC) ERR_UNEXPECTED_LEXEME_EXPECTED(function, LEX_FUNC);
 	Hashmap* variableMap = createHashmap();
@@ -616,7 +658,7 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *i
 	fprintf(file, "\tmovq %%rsp, %%rbp\n");
 	fprintf(file, "\tsubq $%d, %%rsp\n", -nextVariableAddress);
 
-	compileStmtlist(file, stmtlist, variableMap, ifCounter);
+	compileStmtlist(file, stmtlist, variableMap, ifCounter, stringData);
 
 	// We explicitly add a return instruction incase the user forgets to include one,
 	// which will an error value of -1.
@@ -632,6 +674,7 @@ void compileFunction(FILE* file, Lexeme* function, Hashmap* functionsMap, int *i
 
 void compileToASM(FILE* file, Lexeme* head){
 	Hashmap* functionsMap = createHashmap();
+	Hashmap* stringsMap = createHashmap();
 
 	// Strings used in program execution
 	fprintf(file, "printNumFormat:\n");
@@ -644,6 +687,9 @@ void compileToASM(FILE* file, Lexeme* head){
 	fprintf(file, "\t.ascii \"%%c\\0\"\n");
     fprintf(file, "\t.text\n");
 
+    int stringCount = 0;
+    findAndCompileStrings(file, head, stringsMap, &stringCount);
+
     fprintf(file, "\n\n");
 
     int ifCounter = 0;
@@ -654,7 +700,7 @@ void compileToASM(FILE* file, Lexeme* head){
 		// If there is nothing underneath it, then there isn't 
 		// any code, ie it's an empty line.
 		if(child->firstChild != NULL){
-			compileFunction(file, child->firstChild, functionsMap, &ifCounter);
+			compileFunction(file, child->firstChild, functionsMap, &ifCounter, stringsMap);
 		}
 
 		// Move to next child
@@ -751,6 +797,30 @@ void compileToASM(FILE* file, Lexeme* head){
   	fprintf(file, "\tmovq 16(%%rbp), %%rax\n");
   	fprintf(file, "\tleaq -8(%%rax), %%rax\n");
   	fprintf(file, "\tmovq 0(%%rax), %rax\n");
+  	fprintf(file, "\tmovq %%rbp, %%rsp\n");
+	fprintf(file, "\tpopq %%rbp\n");
+	fprintf(file, "\tret\n");
+
+	fprintf(file, ".globl memcpy_step\n");
+	fprintf(file, ".type memcpy_step, @function\n");
+	fprintf(file, "memcpy_step:\n");
+	fprintf(file, "\tpushq %%rbp\n");
+	fprintf(file, "\tmovq %%rsp, %%rbp\n");
+	fprintf(file, "\tsubq $40, %%rsp\n");
+	fprintf(file, "\tmovq 16(%%rbp), %%rax\n");
+	fprintf(file, "\tmovq 24(%%rbp), %%rbx\n");
+	fprintf(file, "\tmovq 32(%%rbp), %%rcx\n");
+	fprintf(file, "\taddq %%rbx, %%rcx\n");
+	fprintf(file, ".memcpy_step_loop:\n");
+	fprintf(file, "\tcmp %%rbx, %%rcx\n");
+	fprintf(file, "\tje .memcpy_step_return\n");
+	fprintf(file, "\tmovq 0(%%rbx), %%rdx\n");
+	fprintf(file, "\tmovq %%rdx, 0(%%rax)\n");
+	fprintf(file, "\taddq $8, %%rax\n");
+	fprintf(file, "\taddq $1, %%rbx\n");
+	fprintf(file, "\tjmp .memcpy_step_loop\n");
+	fprintf(file, ".memcpy_step_return:\n");
+	fprintf(file, "\tmovq 16(%%rbp), %rax\n");
   	fprintf(file, "\tmovq %%rbp, %%rsp\n");
 	fprintf(file, "\tpopq %%rbp\n");
 	fprintf(file, "\tret\n");

@@ -133,6 +133,7 @@ char* typeToText(TokenType type){
 		case WHILE: 			return "WHILE";
 		case IDENTIFIER: 	return "IDENT";
 		case NUMBER: 		return "NUMBER";
+		case STRING: 		return "STRING";
 		case UNKNOWN: 		return "UNKNOWN";
 		case END: 			return "END";
 		case COMMA:			return "COMMA";
@@ -205,6 +206,7 @@ void printTokens(FILE* output, Token* head){
 Token* tokenize(Arguments* args, FILE* file){
 	char c, j;
 	int prevWasSpace = 0;
+	int quoteEncountered = 0;
 	int i = 0;
 	int colNo = -1, lineNo = 0;
 	Token* current = createToken();
@@ -214,6 +216,45 @@ Token* tokenize(Arguments* args, FILE* file){
 	while( (c = fgetc(file)) != EOF){
 		colNo ++;
 		if(prevWasSpace == 1) current->colNo = colNo;
+
+		if(quoteEncountered == 1){
+			j = fgetc(file);
+			ungetc(j, file);
+
+			if(c == '\\'){
+				// Consume character used for escaping purposes
+				colNo ++;
+				fgetc(file);
+				if(j == 'n') j = '\n';
+				if(j == 'r') j = '\r';
+				if(j == '0') j = '\0';
+				current->data[i ++] = j;
+			}else current->data[i ++] = c;
+			current->data[i] = '\0';
+			if(i % 32 == 0){
+				current->data = realloc(current->data, strlen(current->data) + 33);
+			}
+
+			if(c == '"'){
+				quoteEncountered = 0;	
+
+				current->type = STRING;
+				current->next = createToken();
+				current->next->prev = current;
+				current = current->next;
+				current->lineNo = lineNo;
+				current->colNo = colNo + 1;
+				i = 0;
+			}
+
+			continue;
+		}
+
+		if(c == '"' && quoteEncountered == 0){
+			quoteEncountered = 1;
+			current->data[i ++] = c;
+			continue;
+		}
 
 		// A carriage return is bringing us back to the beginning of the line.
 		if(c == '\r'){
@@ -226,7 +267,7 @@ Token* tokenize(Arguments* args, FILE* file){
 			prevWasSpace = 1;
 
 			j = fgetc(file);
-                        ungetc(j, file);
+            ungetc(j, file);
 
 			// If this entry is a space, and the prev is a "'", and the next is a "'", then we are dealing with a space character.
 			if(i == 1 && current->data[0] == '\''){
@@ -236,14 +277,14 @@ Token* tokenize(Arguments* args, FILE* file){
 					current->data[i++] = fgetc(file);
 					current->type = NUMBER;
 					char* newString = malloc(sizeof(char) * 8);
-	                                sprintf(newString, "%d", (int) current->data[1]);
-	                                free(current->data);
-       		                        current->data = newString;
+					sprintf(newString, "%d", (int) current->data[1]);
+					free(current->data);
+					current->data = newString;
 					current->next = createToken();
-		                        current->next->prev = current;
-		                        current = current->next;
-        		                current->lineNo = lineNo;
-        		                current->colNo = colNo + 1;
+					current->next->prev = current;
+					current = current->next;
+					current->lineNo = lineNo;
+					current->colNo = colNo + 1;
 					i = 0;
 				}
 			}

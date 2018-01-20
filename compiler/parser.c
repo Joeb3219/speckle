@@ -15,6 +15,7 @@
 // Private function definitions
 void parseIdentifier(Lexeme* head);
 void parseNumber(Lexeme* head);
+void parseString(Lexeme* head);
 void parseProgram(Lexeme* head);
 void parseStmtList(Lexeme* head);
 void parseFunctions(Lexeme* head);
@@ -75,6 +76,14 @@ void parseNumber(Lexeme* head){
 	addChild(head, number);
 
 	if(!isTokenType(NUMBER)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), NUMBER);
+	consume();
+}
+
+void parseString(Lexeme* head){
+	Lexeme* string = createLexeme(LEX_STRING);
+	addChild(head, string);
+
+	if(!isTokenType(STRING)) ERR_UNEXPECTED_TOKEN_EXPECTED(currentToken(), STRING);
 	consume();
 }
 
@@ -256,6 +265,7 @@ void parseIdentOrNumber(Lexeme* head){
 	if(isPeekType(CURLY_OPEN)) parseElement(head);
 	else if(isTokenType(IDENTIFIER)) parseIdentifier(head);
 	else if(isTokenType(NUMBER)) parseNumber(head);
+	else if(isTokenType(STRING)) parseString(head);
 }
 
 void parseLogic(Lexeme* head){
@@ -602,6 +612,7 @@ char* lexemeTypeToChar(LexemeType type){
 		case LEX_SUB: return "SUB";
 		case LEX_IDENTIFIER: return "IDENTIFIER";
 		case LEX_NUMBER: return "NUMBER";
+		case LEX_STRING: return "STRING";
 		case LEX_MATH: return "MATH";
 		case LEX_ADD: return "ADD";
 		case LEX_MULT: return "MULT";
